@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Lista de espera
     Route::get('/lista-espera', [ListaEsperaController::class, 'index']);
     Route::post('/lista-espera/notificar', [ListaEsperaController::class, 'notificar']);
+    Route::post('/lista-espera/aceitar', [ListaEsperaController::class,'aceitar']);
 
     // Pontos
     Route::get('/movimento-pontos', [PontosController::class, 'index']);
