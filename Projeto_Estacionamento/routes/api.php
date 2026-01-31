@@ -1,34 +1,43 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\ListaEsperaController;
 use App\Http\Controllers\PontosController;
 use App\Http\Controllers\ReportController;
 
+// Rotas Públicas
 
-Route::get('/reservas', [ReservaController::class,'index']); // lista reservas do dia
-Route::get('/reservas/{id}', [ReservaController::class,'show']); // detalhes de uma reserva
-Route::post('/reservas', [ReservaController::class,'store']); // criar reserva
-Route::patch('/reservas/{id}/cancelar', [ReservaController::class,'cancelar']); // cancelar
-Route::get('/disponibilidade', [ReservaController::class,'disponibilidade']); // lugares livres
+Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/lista-espera', [ListaEsperaController::class,'index']);
-Route::post('/lista-espera/notificar', [ListaEsperaController::class,'notificar']);
+// Rotas Protegidas
 
-Route::get('/movimento-pontos', [PontosController::class,'index']);
-Route::patch('/users/{id}/pontos', [PontosController::class,'ajustar']);
+Route::middleware('auth:sanctum')->group(function () {
 
-//Report
-// Submeter report
-Route::post('/reports', [ReportController::class,'store']);
+    // Auth
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 
-// Listar reports pendentes (ADMIN)
-Route::get('/reports/pendentes', [ReportController::class,'pendentes']);
+    // Reservas
+    Route::get('/reservas', [ReservaController::class, 'index']);
+    Route::get('/reservas/{id}', [ReservaController::class, 'show']);
+    Route::post('/reservas', [ReservaController::class, 'store']);
+    Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
+    Route::get('/disponibilidade', [ReservaController::class, 'disponibilidade']);
 
-// Validar report (ADMIN)
-Route::patch('/reports/{id}/validar', [ReportController::class,'validar']);
+    // Lista de espera
+    Route::get('/lista-espera', [ListaEsperaController::class, 'index']);
+    Route::post('/lista-espera/notificar', [ListaEsperaController::class, 'notificar']);
 
-// Rejeitar report (ADMIN)
-Route::patch('/reports/{id}/rejeitar', [ReportController::class,'rejeitar']);
+    // Pontos
+    Route::get('/movimento-pontos', [PontosController::class, 'index']);
+    Route::patch('/users/{id}/pontos', [PontosController::class, 'ajustar']);
 
+    // Reports
+    Route::post('/reports', [ReportController::class, 'store']);
+    Route::get('/reports/pendentes', [ReportController::class, 'pendentes']);
+    Route::patch('/reports/{id}/validar', [ReportController::class, 'validar']);
+    Route::patch('/reports/{id}/rejeitar', [ReportController::class, 'rejeitar']);
 
+});
