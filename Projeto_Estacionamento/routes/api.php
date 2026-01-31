@@ -40,5 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/pendentes', [ReportController::class, 'pendentes']);
     Route::patch('/reports/{id}/validar', [ReportController::class, 'validar']);
     Route::patch('/reports/{id}/rejeitar', [ReportController::class, 'rejeitar']);
+    Route::patch('/reports/{id}/aplicar-penalizacao', [ReportController::class, 'aplicarPenalizacao']);
+
 
 });
