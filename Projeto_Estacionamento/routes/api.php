@@ -6,9 +6,11 @@ use App\Http\Controllers\PontosController;
 use App\Http\Controllers\ReportController;
 
 
-Route::get('/reservas', [ReservaController::class,'index']);
-Route::post('/reservas', [ReservaController::class,'store']);
-Route::patch('/reservas/{id}/cancelar', [ReservaController::class,'cancelar']);
+Route::get('/reservas', [ReservaController::class,'index']); // lista reservas do dia
+Route::get('/reservas/{id}', [ReservaController::class,'show']); // detalhes de uma reserva
+Route::post('/reservas', [ReservaController::class,'store']); // criar reserva
+Route::patch('/reservas/{id}/cancelar', [ReservaController::class,'cancelar']); // cancelar
+Route::get('/disponibilidade', [ReservaController::class,'disponibilidade']); // lugares livres
 
 Route::get('/lista-espera', [ListaEsperaController::class,'index']);
 Route::post('/lista-espera/notificar', [ListaEsperaController::class,'notificar']);
