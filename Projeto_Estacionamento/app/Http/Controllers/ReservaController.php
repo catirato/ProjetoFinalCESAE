@@ -67,4 +67,26 @@ class ReservaController extends Controller
 
     return response()->json($reserva, 201);
 }
+
+public function validarPresenca(Request $request, $id)
+{
+    $reserva = Reserva::find($id);
+
+    if (!$reserva) {
+        return response()->json(['error' => 'Reserva não encontrada'], 404);
+    }
+
+    // Marca a reserva como validada pelo segurança
+    $reserva->validada_por = $request->user()->id; // o segurança que validou
+    $reserva->save();
+
+    // Notifica o utilizador que a presença foi validada
+    NotificationService::notifyUser(
+        $reserva->utilizador->id,
+        "Sua presença na reserva do dia {$reserva->data} foi validada."
+    );
+
+    return response()->json(['message' => 'Reserva validada com sucesso', 'reserva' => $reserva]);
+}
+
 }

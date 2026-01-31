@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas', [ReservaController::class, 'store']);
     Route::patch('/reservas/{id}/cancelar', [ReservaController::class, 'cancelar']);
     Route::get('/disponibilidade', [ReservaController::class, 'disponibilidade']);
+    Route::patch('/reservas/{id}/validar-presenca', [ReservaController::class, 'validarPresenca']);
+
 
     // Lista de espera
     Route::get('/lista-espera', [ListaEsperaController::class, 'index']);

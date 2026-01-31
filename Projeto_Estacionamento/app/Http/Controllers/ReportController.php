@@ -57,7 +57,6 @@ class ReportController extends Controller
                 break;
 
             case 'PROBLEMAS_NO_ESTACIONAMENTO':
-                // Não há pontos, apenas notifica
                 break;
 
             case 'TORNAR_LUGAR_INDISPONIVEL':
