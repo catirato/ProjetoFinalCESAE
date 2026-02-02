@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('utilizador', function (Blueprint $table) {
@@ -21,12 +18,8 @@ return new class extends Migration
             $table->integer('pontos')->default(30);
             $table->softDeletes();
         });
-
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('utilizador');
