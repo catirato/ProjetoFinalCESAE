@@ -12,10 +12,10 @@ Route::get('/home', function () {
     return view('homepage');
 });
 
-// registration route
+registration route
 Route::view('/register', 'login')
-    ->middleware('guest')
-    ->name('register');
+   ->middleware('guest')
+ ->name('register');
 
 Route::post('/register', Register::class)
     ->middleware('guest');
