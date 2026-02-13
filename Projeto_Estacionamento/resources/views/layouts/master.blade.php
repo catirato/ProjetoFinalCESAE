@@ -23,13 +23,16 @@
             <a href="/" class="btn btn-ghost text-xl">🐦CESAE Estacionamento </a>
         </div>
         <div class="navbar-end gap-2">
-            <a href="#" class="btn btn-ghost btn-sm">Sign In</a>
-            <a href="#" class="btn btn-primary btn-sm">Sign Up</a>
+            <!--ir para a route do login-->
+            <a href="/login" class="btn btn-primary btn-sm">Login</a>
+            <!--ir para a route do register-->
+            {{-- <a href="/register" class="btn btn-primary btn-sm">Registar</a> --}}
         </div>
     </nav>
 
     <main class="flex-1 container mx-auto px-4 py-8">
       {{-- {{$slot}} --}}
+      @yield('content')
     </main>
 
     <footer class="footer footer-center p-5 bg-base-300 text-base-content text-xs">
