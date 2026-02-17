@@ -10,9 +10,8 @@
         <div class="card bg-base-100 shadow mt-8">
             <div class="card-body">
                 <div>
-                    <h1 class="text-3xl font-bold">Welcome to Chirper!</h1>
-                    <p class="mt-4 text-base-content/60">This is your brand new Laravel application. Time to make it
-                        sing (or chirp)!</p>
+                    <h1 class="text-3xl font-bold">Seja bem vindo!</h1>
+                    <p class="mt-4 text-base-content/60">Só estaciona quem faz por isso...!</p>
                 </div>
             </div>
         </div>

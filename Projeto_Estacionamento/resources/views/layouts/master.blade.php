@@ -20,7 +20,7 @@
 <body class="min-h-screen flex flex-col bg-base-200 font-sans">
     <nav class="navbar bg-base-100">
         <div class="navbar-start">
-            <a href="/" class="btn btn-ghost text-xl">🐦CESAE Estacionamento </a>
+            <a href="/" class="btn btn-ghost text-xl">🚗CESAE Estacionamento </a>
         </div>
         <div class="navbar-end gap-2">
             <!--ir para a route do login-->

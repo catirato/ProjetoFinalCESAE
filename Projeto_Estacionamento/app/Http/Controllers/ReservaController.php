@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reserva;
-use App\Models\Utilizador;
+// use App\Models\Utilizador;
 use App\Models\Lugar;
 use App\Services\PointsService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\MovimentoPontos; // podem não ser
+use App\Models\HistoricoEventos; // podem não ser
 
 
 class ReservaController extends Controller
@@ -16,6 +18,12 @@ class ReservaController extends Controller
     public function index()
     {
         $user = auth('utilizador')->user();
+
+        // verificação adicionada
+        if ($user) {
+            return redirect()->route('login');
+            // ou para error page not found
+        }
         
         // Reservas ativas (futuras ou hoje)
         $reservasAtivas = Reserva::where('utilizador_id', $user->id)
@@ -29,7 +37,7 @@ class ReservaController extends Controller
         $reservasHistorico = Reserva::where('utilizador_id', $user->id)
             ->where(function($q) {
                 $q->whereIn('estado', ['CANCELADA', 'NAO_COMPARECEU'])
-                  ->orWhere('data', '<', today());
+                ->orWhere('data', '<', today());
             })
             ->with('lugar')
             ->orderBy('data', 'desc')
