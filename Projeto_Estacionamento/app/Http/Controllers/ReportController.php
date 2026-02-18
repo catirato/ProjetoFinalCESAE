@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Report;
+// use App\Models\Report;
 use App\Models\Utilizador;
 use App\Models\Lugar;
-use App\Services\PointsService;
+// use App\Services\PointsService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
