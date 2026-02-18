@@ -8,8 +8,7 @@
     <!-- Welcome Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">
-        {{-- {{ auth()->user()->nome }} --}}
-            {{-- Olá, {{ auth('utilizador')->user()->nome }}! 👋 --}}
+            Olá, {{ auth('utilizador')->user()->nome }}! 👋
         </h1>
         <p class="text-gray-600 mt-1">Bem-vindo ao seu painel de controlo</p>
     </div>
@@ -21,8 +20,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-yellow-100 text-sm font-medium">Meus Pontos</p>
-                    {{-- <p class="text-3xl font-bold mt-2">{{ auth('utilizador')->user()->pontos }}</p> --}}
-                    <p class="text-3xl font-bold mt-2">NOME</p>
+                    <p class="text-3xl font-bold mt-2">{{ auth('utilizador')->user()->pontos }}</p>
                 </div>
                 <div class="text-5xl opacity-80">⭐</div>
             </div>

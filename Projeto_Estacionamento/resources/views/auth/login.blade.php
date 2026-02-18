@@ -1,76 +1,88 @@
 @extends('layouts.master')
 
-{{-- @section('title', 'Register') --}}
+@section('title', 'Login')
 
 @section('content')
-
- <div class="hero min-h-[calc(100vh-16rem)]">
-        <div class="hero-content flex-col">
-            <div class="card w-96 bg-base-100">
-                <div class="card-body">
-                    <h1 class="text-3xl font-bold text-center mb-6">Seja bem vindo!</h1>
- 
-                    <form method="POST" action="/login">
-                        @csrf
- 
-                        <!-- Email -->
-                        <label class="floating-label mb-6">
-                            <input type="email"
-                                   name="email"
-                                   placeholder="[mail@example.com](<mailto:mail@example.com>)"
-                                   value="{{ old('email') }}"
-                                   class="input input-bordered @error('email') input-error @enderror"
-                                   required
-                                   autofocus>
-                            <span>Email</span>
-                        </label>
-                        @error('email')
-                            <div class="label -mt-4 mb-2">
-                                <span class="label-text-alt text-error">{{ $message }}</span>
-                            </div>
-                        @enderror
- 
-                        <!-- Password -->
-                        <label class="floating-label mb-6">
-                            <input type="password"
-                                   name="password"
-                                   placeholder="••••••••"
-                                   class="input input-bordered @error('password') input-error @enderror"
-                                   required>
-                            <span>Password</span>
-                        </label>
-                        @error('password')
-                            <div class="label -mt-4 mb-2">
-                                <span class="label-text-alt text-error">{{ $message }}</span>
-                            </div>
-                        @enderror
- 
-                        <!-- Remember Me -->
-                        <div class="form-control mt-4">
-                            <label class="label cursor-pointer justify-start">
-                                <input type="checkbox"
-                                       name="remember"
-                                       class="checkbox">
-                                <span class="label-text ml-2">Remember me</span>
-                            </label>
-                        </div>
- 
-                        <!-- Submit Button -->
-                        <div class="form-control mt-8">
-                            <button type="submit" class="btn btn-primary btn-sm w-full">
-                                Sign In
-                            </button>
-                        </div>
-                    </form>
- 
-                    <div class="divider">OR</div>
-                    <p class="text-center text-sm">
-                        Don't have an account?
-                        <a href="/register" class="link link-primary">Register</a>
-                    </p>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                🚗 Estacionamento Cesae Digital
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Entre na sua conta
+            </p>
+        </div>
+        
+        <form class="mt-8 space-y-6" action="{{ url('/login') }}" method="POST">
+            @csrf
+            
+            @if($errors->any())
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    <ul class="list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="email" class="sr-only">Email</label>
+                    <input id="email" 
+                           name="email" 
+                           type="email" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
+                           placeholder="Email"
+                           value="{{ old('email') }}">
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input id="password" 
+                           name="password" 
+                           type="password" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
+                           placeholder="Password">
                 </div>
             </div>
-        </div>
-    </div>
 
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember" 
+                           name="remember" 
+                           type="checkbox" 
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="remember" class="ml-2 block text-sm text-gray-900">
+                        Lembrar-me
+                    </label>
+                </div>
+
+                <div class="text-sm">
+                    <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
+                        Esqueceu a password?
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" 
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Entrar
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-sm text-gray-600">
+                    Não tem conta? 
+                    <a href="{{ url('/register') }}" class="font-medium text-blue-600 hover:text-blue-500">
+                        Registar aqui
+                    </a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
