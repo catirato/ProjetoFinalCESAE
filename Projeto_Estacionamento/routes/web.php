@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController; // está
 use App\Http\Controllers\ReservaController; // está x2
 use App\Http\Controllers\ListaEsperaController; // adicionei x3
 use App\Http\Controllers\PontosController; // adicionei x4
+use App\Http\Controllers\ReportController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -30,8 +31,8 @@ Route::post('/login', Login::class);
 Route::view('/register', 'auth.register');
 Route::post('/register', Register::class);
 
-//LOGOUT - ver depois
-Route::post('/logout', [Logout::class, 'logout']);
+//LOGOUT
+Route::post('/logout', Logout::class)->name('logout');
 
 // para testar as rotas protegidas
 // Route::get('/login-teste', function() {

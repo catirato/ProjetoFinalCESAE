@@ -17,16 +17,22 @@ class Utilizador extends Authenticatable
     protected $fillable = [
         'nome',
         'email',
-        'password_hash',
+        'password',
         'obrigar_mudar_password',
         'role',
         'pontos'
     ];
 
     protected $hidden = [
-        'password_hash',
+        'password',
+        'remember_token',
     ];
 
+    protected $casts = [
+        'password' => 'hashed',
+    ];
+
+    
     // Relações
     public function reservas()
     {
