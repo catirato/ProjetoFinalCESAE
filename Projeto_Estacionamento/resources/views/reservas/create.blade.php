@@ -153,7 +153,7 @@ function loadPlaces(places) {
                 <div class="text-6xl mb-4">😔</div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2">Sem vagas disponíveis</h3>
                 <p class="text-gray-600 mb-4">Todos os lugares estão reservados para esta data</p>
-                <a href="${window.location.origin}/lista-espera/adicionar" 
+                <a href="${window.location.origin}/lista-espera" 
                    class="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700">
                     Entrar na Lista de Espera
                 </a>

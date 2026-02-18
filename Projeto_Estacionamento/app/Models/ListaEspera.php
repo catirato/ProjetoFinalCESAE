@@ -18,6 +18,8 @@ class ListaEspera extends Model
         'prioridade'
     ];
 
+    public $timestamps = false;
+
     // Relações
     public function utilizador()
     {

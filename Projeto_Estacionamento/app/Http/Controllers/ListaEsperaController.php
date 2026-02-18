@@ -30,7 +30,7 @@ class ListaEsperaController extends Controller
             ->orderBy('prioridade')
             ->get();
         
-        return view('lista-espera.index', compact('minhasEntradas', 'listaCompleta'));
+        return view('listaEspera.index', compact('minhasEntradas', 'listaCompleta'));
     }
 
     public function store(Request $request)

@@ -77,7 +77,7 @@
                 </div>
             </a>
             
-            <a href="{{ url('/lista-espera/adicionar') }}" 
+            <a href="{{ url('/lista-espera') }}" 
                class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
                 <div class="bg-purple-600 text-white p-3 rounded-lg mr-4">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

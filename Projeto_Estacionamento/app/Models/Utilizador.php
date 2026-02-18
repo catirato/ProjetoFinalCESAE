@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable; // Para autenticação
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Reserva;
+use App\Models\ListaEspera; 
+use App\Models\MovimentoPontos;
+use App\Models\HistoricoEventos;
+use App\Models\Report;
 
 class Utilizador extends Authenticatable
 {
@@ -35,27 +40,32 @@ class Utilizador extends Authenticatable
     
     // Relações
     public function reservas()
-    {
-        return $this->hasMany(Reserva::class);
-    }
+{
+    return $this->hasMany(Reserva::class);
+}
 
-    public function reservasValidadas()
-    {
-        return $this->hasMany(Reserva::class, 'validada_por');
-    }
+public function listaEspera()
+{
+    return $this->hasMany(\App\Models\ListaEspera::class, 'utilizador_id');
+}
 
-    public function movimentosPontos()
-    {
-        return $this->hasMany(MovimentoPontos::class);
-    }
+public function reservasValidadas()
+{
+    return $this->hasMany(Reserva::class, 'validada_por');
+}
 
-    public function reports()
-    {
-        return $this->hasMany(Report::class);
-    }
+public function movimentosPontos()
+{
+    return $this->hasMany(MovimentoPontos::class);
+}
 
-    public function historicoEventos()
-    {
-        return $this->hasMany(HistoricoEventos::class);
-    }
+public function reports()
+{
+    return $this->hasMany(Report::class);
+}
+
+public function historicoEventos()
+{
+    return $this->hasMany(HistoricoEventos::class);
+}
 }

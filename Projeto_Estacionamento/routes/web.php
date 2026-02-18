@@ -3,8 +3,8 @@
 use Illuminate\Support\Facades\Route; // x1
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\Login;
-use App\Http\Controllers\Auth\Register;
 use App\Http\Controllers\Auth\Logout;
+use App\Http\Controllers\Auth\Register;
 use App\Http\Controllers\DashboardController; // está 
 use App\Http\Controllers\ReservaController; // está x2
 use App\Http\Controllers\ListaEsperaController; // adicionei x3

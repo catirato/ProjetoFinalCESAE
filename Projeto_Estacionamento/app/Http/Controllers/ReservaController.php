@@ -21,7 +21,7 @@ class ReservaController extends Controller
 
         // verificação adicionada
         if ($user) {
-            return redirect()->route('login');
+            return redirect()->route('dashboard');
             // ou para error page not found
         }
         

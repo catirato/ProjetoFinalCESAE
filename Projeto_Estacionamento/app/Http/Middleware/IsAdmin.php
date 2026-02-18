@@ -19,7 +19,7 @@ class IsAdmin
             return redirect('/login');
         }
 
-        if (auth('utilizador')->user()->role !== 'admin') {
+        if (auth('utilizador')->user()->role !== 'ADMIN') {
             abort(403, 'Apenas administradores podem aceder.');
         }
 
