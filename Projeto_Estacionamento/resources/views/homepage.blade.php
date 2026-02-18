@@ -3,6 +3,82 @@
 @section('title', 'Estacionamento Cesae Digital')
 
 @section('content')
+<div class="max-w-4xl mx-auto">
+    
+    <!-- Hero -->
+    <div class="card bg-base-100 shadow mt-8 text-center p-8">
+        <h1 class="text-3xl font-bold mb-2">🚗 Bem-vindo ao Estacionamento CESAE!</h1>
+        <p class="text-base-content/70 mb-4">Gerencie as vagas de forma rápida e eficiente.</p>
+        {{-- @guest('utilizador') --}}
+            {{-- <div class="flex justify-center gap-4 mt-4">
+                <a href="{{ url('/login') }}" class="btn btn-primary">Entrar</a>
+                <a href="{{ url('/register') }}" class="btn btn-outline">Registar</a>
+            </div> --}}
+        {{-- @else --}}
+            {{-- <a href="{{ url('/dashboard') }}" class="btn btn-primary mt-4">Ir para Dashboard</a> --}}
+        {{-- @endguest --}}
+    </div>
+
+    <!-- Features -->
+    <div class="grid md:grid-cols-3 gap-6 mt-12">
+        <div class="card bg-base-100 shadow p-6 text-center">
+            <div class="text-4xl mb-3">🎯</div>
+            <h3 class="font-bold mb-1">Sistema de Pontos</h3>
+            <p class="text-sm text-base-content/70">Cada colaborador tem pontos para reservar vagas. Use com sabedoria!</p>
+        </div>
+        <div class="card bg-base-100 shadow p-6 text-center">
+            <div class="text-4xl mb-3">📋</div>
+            <h3 class="font-bold mb-1">Lista de Espera</h3>
+            <p class="text-sm text-base-content/70">Sem vagas? Entre na lista de espera e seja notificado.</p>
+        </div>
+        <div class="card bg-base-100 shadow p-6 text-center">
+            <div class="text-4xl mb-3">⚡</div>
+            <h3 class="font-bold mb-1">Reservas Rápidas</h3>
+            <p class="text-sm text-base-content/70">Reserve seu lugar em poucos cliques. Simples e rápido.</p>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="card bg-base-100 shadow p-8 mt-12">
+        <h2 class="text-2xl font-bold text-center mb-6">Como Funciona?</h2>
+        <div class="space-y-4">
+            @foreach([
+                'Crie a sua conta' => 'Registe-se com o email da empresa e receba pontos iniciais.',
+                'Reserve uma vaga' => 'Escolha o dia desejado e gaste pontos para garantir o seu lugar.',
+                'Estacione com tranquilidade' => 'Chegue e estacione no lugar reservado. Segurança validará sua presença.'
+            ] as $title => $desc)
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                    {{ $loop->iteration }}
+                </div>
+                <div>
+                    <h4 class="font-semibold">{{ $title }}</h4>
+                    <p class="text-sm text-base-content/70">{{ $desc }}</p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+
+</div>
+@endsection
+
+
+
+
+
+
+
+
+
+
+
+
+{{-- @extends('layouts.master')
+
+@section('title', 'Estacionamento Cesae Digital')
+
+@section('content')
 <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
@@ -118,4 +194,4 @@
         
     </div>
 </div>
-@endsection
+@endsection --}}

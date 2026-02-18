@@ -73,15 +73,14 @@
                     Entrar
                 </button>
             </div>
-            
-            <div class="text-center">
+            {{-- <div class="text-center">
                 <p class="text-sm text-gray-600">
                     Não tem conta? 
                     <a href="{{ url('/register') }}" class="font-medium text-blue-600 hover:text-blue-500">
                         Registar aqui
                     </a>
                 </p>
-            </div>
+            </div> --}}
         </form>
     </div>
 </div>

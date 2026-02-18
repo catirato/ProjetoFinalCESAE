@@ -1,4 +1,96 @@
 <!DOCTYPE html>
+<html lang="pt" data-theme="lofi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Estacionamento CESAE')</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans bg-base-200">
+
+    <!-- Navbar -->
+    <nav class="navbar bg-base-100 shadow-md">
+        <div class="navbar-start">
+            <a href="{{ url('/') }}" class="btn btn-ghost text-xl font-bold">🚗 CESAE Estacionamento</a>
+        </div>
+        <div class="navbar-end gap-2">
+            @guest('utilizador')
+                <a href="{{ url('/login') }}" class="btn btn-primary btn-sm">Login</a>
+                {{-- <a href="{{ url('/register') }}" class="btn btn-outline btn-sm">Registar</a> --}}
+            @else
+                <div class="dropdown dropdown-end">
+                    <label tabindex="0" class="btn btn-ghost btn-sm gap-1">
+                        {{ auth('utilizador')->user()->nome }}
+                        <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5H7z"/>
+                        </svg>
+                    </label>
+                    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                        <li><a href="{{ url('/perfil') }}">Meu Perfil</a></li>
+                        <li>
+                            <form method="POST" action="{{ url('/logout') }}">
+                                @csrf
+                                <button type="submit" class="w-full text-left">Sair</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            @endguest
+        </div>
+    </nav>
+
+    <!-- Alert Messages -->
+    @if(session('success'))
+        <div class="max-w-7xl mx-auto px-4 py-2 mt-4">
+            <div class="alert alert-success shadow-lg">
+                <span>{{ session('success') }}</span>
+            </div>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="max-w-7xl mx-auto px-4 py-2 mt-4">
+            <div class="alert alert-error shadow-lg">
+                <span>{{ session('error') }}</span>
+            </div>
+        </div>
+    @endif
+
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto px-4 py-8">
+        @yield('content')
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer footer-center p-5 bg-base-300 text-base-content text-xs">
+        <p>© 2026 CESAE Digital - Software Developer PRT</p>
+    </footer>
+
+    <script src="//unpkg.com/alpinejs" defer></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+{{-- <!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
@@ -139,4 +231,4 @@
     
     <script src="//unpkg.com/alpinejs" defer></script>
 </body>
-</html>
+</html> --}}
