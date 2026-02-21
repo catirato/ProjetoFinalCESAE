@@ -26,15 +26,15 @@ return new class extends Migration
 
             $table->date('data');
             $table->enum('estado', ['ATIVA', 'PRESENTE', 'NAO_COMPARECEU', 'CANCELADA']);
+            $table->enum('modo_reserva', ['COLAB', 'ADMIN'])->default('COLAB');
+            $table->enum('justificacao_tipo', ['EVENTO', 'OBRAS', 'MOBILIDADE_REDUZIDA', 'OUTRO'])->nullable();
+            $table->text('justificacao_detalhe')->nullable();
 
             $table->foreignId('validada_por')
                 ->nullable()
                 ->constrained('utilizador')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
-
-            $table->unique(['utilizador_id', 'data']);
-            $table->unique(['lugar_id', 'data']);
         });
 
     }

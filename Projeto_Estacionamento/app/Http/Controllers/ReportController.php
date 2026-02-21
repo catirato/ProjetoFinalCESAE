@@ -2,86 +2,113 @@
 
 namespace App\Http\Controllers;
 
-// use App\Models\Report;
-use App\Models\Utilizador;
-use App\Models\Lugar;
-// use App\Services\PointsService;
+use App\Models\Report;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
-    //️Submeter report (feito pelo colaborador)
-    public function store(Request $request)
+    public function create()
     {
-        $report = Report::create([
-            'utilizador_id' => $request->utilizador_id, // quem faz o report
-            'tipo' => $request->tipo,                  // ex: 'LUGAR_OCUPADO'
-            'descricao' => $request->descricao,
-            'estado' => 'PENDENTE'
-        ]);
-
-        return response()->json($report);
+        return view('reports.create');
     }
 
-    //  Listar reports pendentes (ADMIN analisa)
+    public function index(Request $request)
+    {
+        $allowedSorts = ['data', 'utilizador', 'tipo', 'descricao', 'estado'];
+        $sort = $request->get('sort', 'data');
+        $direction = strtolower($request->get('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'data';
+        }
+
+        $query = Report::query()->with('utilizador');
+
+        if ($sort === 'utilizador') {
+            $query->join('utilizador', 'utilizador.id', '=', 'report.utilizador_id')
+                ->select('report.*')
+                ->orderBy('utilizador.nome', $direction);
+        } else {
+            $columnMap = [
+                'data' => 'created_at',
+                'tipo' => 'tipo',
+                'descricao' => 'descricao',
+                'estado' => 'estado',
+            ];
+
+            $query->orderBy($columnMap[$sort], $direction);
+        }
+
+        $reports = $query->paginate(20)->withQueryString();
+
+        return view('reports.index', compact('reports'));
+    }
+
+    public function show($id)
+    {
+        $report = Report::with('utilizador')->findOrFail($id);
+
+        return view('reports.show', compact('report'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'tipo' => 'required|in:LUGAR_OCUPADO,SEM_RESERVA,PROBLEMA',
+            'descricao' => 'required|string|max:2000',
+        ]);
+
+        $report = Report::create([
+            'utilizador_id' => auth('utilizador')->id(),
+            'tipo' => $validated['tipo'],
+            'descricao' => $validated['descricao'],
+            'estado' => 'PENDENTE',
+        ]);
+
+        NotificationService::notifyAdminsAboutReport($report);
+
+        return back()->with('success', 'Relatório submetido com sucesso.');
+    }
+
     public function pendentes()
     {
         return Report::where('estado', 'PENDENTE')->get();
     }
 
-    //  Validar report (feito pelo ADMIN)
     public function validar(Request $request, $id)
     {
-        $report = Report::find($id);
-        if (!$report) {
-            return response()->json(['error' => 'Report não encontrado'], 404);
+        $report = Report::findOrFail($id);
+
+        if ($report->estado !== 'PENDENTE') {
+            return back()->with('error', 'Só é possível validar relatórios pendentes.');
         }
 
         $report->estado = 'VALIDADO';
         $report->save();
 
-        // Aplica ações dependendo do tipo de report
-        switch ($report->tipo) {
-            case 'LUGAR_OCUPADO':
-            case 'VEICULO_SEM_RESERVA':
-            case 'ACIDENTE_ENTRE_VIATURAS':
-                // Apenas regista a intenção de penalizar, o admin aplica os pontos depois
-                $usuario = Utilizador::find($request->utilizador_afetado_id);
-                if ($usuario) {
-                    NotificationService::notifyUser(
-                        $usuario->id,
-                        "Report validado: {$report->descricao}. Penalização será aplicada pelo ADMIN."
-                    );
-                }
-                break;
-
-            case 'PROBLEMAS_NO_ESTACIONAMENTO':
-                break;
-
-            case 'TORNAR_LUGAR_INDISPONIVEL':
-                $lugar = Lugar::find($request->lugar_id);
-                if ($lugar) {
-                    $lugar->ativo = false;
-                    $lugar->save();
-                }
-                break;
+        if ($request->boolean('ajustar_pontos')) {
+            return redirect()
+                ->route('admin.pontos.index')
+                ->with('success', 'Relatório validado. Faça agora o ajuste de pontos.');
         }
 
-        return response()->json($report);
+        return redirect()
+            ->route('admin.relatorios.index')
+            ->with('success', 'Relatório validado.');
     }
 
-    //  Rejeitar report
     public function rejeitar($id)
     {
-        $report = Report::find($id);
-        if (!$report) {
-            return response()->json(['error' => 'Report não encontrado'], 404);
+        $report = Report::findOrFail($id);
+
+        if ($report->estado !== 'PENDENTE') {
+            return back()->with('error', 'Só é possível rejeitar relatórios pendentes.');
         }
 
         $report->estado = 'REJEITADO';
         $report->save();
 
-        return response()->json($report);
+        return back()->with('success', 'Relatório rejeitado.');
     }
 }

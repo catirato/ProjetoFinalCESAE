@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable; // Para autenticação
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Reserva;
 use App\Models\ListaEspera; 
 use App\Models\MovimentoPontos;
@@ -15,13 +15,15 @@ use App\Models\Report;
 
 class Utilizador extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'utilizador';
 
     protected $fillable = [
         'nome',
         'email',
+        'telemovel',
+        'foto_perfil_path',
         'password',
         'obrigar_mudar_password',
         'role',

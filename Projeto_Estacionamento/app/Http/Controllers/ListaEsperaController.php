@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-// use App\Models\Lugar;
+use App\Models\Lugar;
 use App\Models\Reserva;
-use App\Services\PointsService;
+use App\Models\MovimentoPontos;
+use App\Models\Utilizador;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\ListaEspera; //AQUI
-use App\Models\HistoricoEventos; //AQUI
-
+use App\Models\ListaEspera;
+use App\Models\HistoricoEventos;
+use Carbon\Carbon;
 
 class ListaEsperaController extends Controller
 {
+    private const LUGARES_FIXOS = [1, 2, 5];
+
     public function index()
     {
         $user = auth('utilizador')->user();
@@ -102,64 +105,126 @@ class ListaEsperaController extends Controller
     
     public function accept($id)
     {
-        // Aceitar vaga disponível
         $entrada = ListaEspera::findOrFail($id);
         $user = auth('utilizador')->user();
-        
+
+        $resultado = $this->confirmarEntrada($entrada, $user);
+        if (!empty($resultado['error'])) {
+            return back()->with('error', $resultado['error']);
+        }
+
+        return redirect('/reservas')->with('success', 'Vaga aceite! Reserva criada com sucesso.');
+    }
+
+    public function confirmFromEmail($id, $token)
+    {
+        $entrada = ListaEspera::findOrFail($id);
+        $user = auth('utilizador')->user();
+
+        $resultado = $this->confirmarEntrada($entrada, $user, $token);
+        if (!empty($resultado['error'])) {
+            return redirect('/lista-espera')->with('error', $resultado['error']);
+        }
+
+        return redirect('/reservas')->with('success', 'Reserva confirmada através do email.');
+    }
+
+    private function confirmarEntrada(ListaEspera $entrada, Utilizador $user, ?string $token = null): array
+    {
         if ($entrada->utilizador_id !== $user->id) {
             abort(403);
         }
-        
+
         if ($entrada->estado !== 'NOTIFICADO') {
-            return back()->with('error', 'Esta vaga já não está disponível.');
+            return ['error' => 'Esta vaga já não está disponível.'];
         }
-        
-        // Aqui criaria a reserva automaticamente
-        // ... (código similar ao ReservaController@store)
-        
-        $entrada->update(['estado' => 'ACEITE']);
-        
-        return redirect('/reservas')->with('success', 'Vaga aceite! Reserva criada.');
+
+        if ($token !== null && !hash_equals((string) $entrada->notification_token, (string) $token)) {
+            return ['error' => 'Link de confirmação inválido.'];
+        }
+
+        $dataReserva = Carbon::parse($entrada->data);
+        if ($dataReserva->isToday() && now()->gt($dataReserva->copy()->setTime(10, 0))) {
+            $entrada->update(['estado' => 'EXPIRADO', 'notification_token' => null]);
+            return ['error' => 'Para vagas de hoje, a confirmação só pode ser feita até às 10h.'];
+        }
+
+        if ($entrada->expira_em && now()->gt($entrada->expira_em)) {
+            $entrada->update(['estado' => 'EXPIRADO', 'notification_token' => null]);
+            return ['error' => 'O prazo de confirmação desta vaga já expirou.'];
+        }
+
+        if ($user->pontos < 3) {
+            return ['error' => 'Não tem pontos suficientes para confirmar a vaga.'];
+        }
+
+        return DB::transaction(function () use ($entrada, $user, $dataReserva) {
+            $entradaLocked = ListaEspera::where('id', $entrada->id)->lockForUpdate()->first();
+            if (!$entradaLocked || $entradaLocked->estado !== 'NOTIFICADO') {
+                return ['error' => 'Esta vaga já foi ocupada por outro colaborador.'];
+            }
+
+            $jaTemReserva = Reserva::where('utilizador_id', $user->id)
+                ->where('data', $dataReserva->toDateString())
+                ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->lockForUpdate()
+                ->exists();
+            if ($jaTemReserva) {
+                return ['error' => 'Já tem uma reserva ativa para esta data.'];
+            }
+
+            $lugarLivre = Lugar::where('ativo', true)
+                ->whereNotIn('numero', self::LUGARES_FIXOS)
+                ->whereDoesntHave('reservas', function ($q) use ($dataReserva) {
+                    $q->where('data', $dataReserva->toDateString())
+                        ->whereIn('estado', ['ATIVA', 'PRESENTE']);
+                })
+                ->lockForUpdate()
+                ->first();
+
+            if (!$lugarLivre) {
+                $entradaLocked->update(['estado' => 'EXPIRADO', 'notification_token' => null]);
+                return ['error' => 'A vaga já não está disponível.'];
+            }
+
+            $reserva = Reserva::create([
+                'utilizador_id' => $user->id,
+                'lugar_id' => $lugarLivre->id,
+                'data' => $dataReserva->toDateString(),
+                'estado' => 'ATIVA',
+            ]);
+
+            $user->decrement('pontos', 3);
+
+            MovimentoPontos::create([
+                'utilizador_id' => $user->id,
+                'reserva_id' => $reserva->id,
+                'tipo' => 'RESERVA',
+                'pontos' => -3,
+            ]);
+
+            HistoricoEventos::create([
+                'utilizador_id' => $user->id,
+                'tipo_evento' => 'LISTA_ESPERA',
+                'entidade_id' => $entradaLocked->id,
+                'acao' => 'ATUALIZADO',
+                'descricao' => "Aceitou vaga da lista de espera para " . $dataReserva->format('d/m/Y'),
+            ]);
+
+            $entradaLocked->update([
+                'estado' => 'ACEITE',
+                'notification_token' => null,
+            ]);
+
+            ListaEspera::where('data', $dataReserva->toDateString())
+                ->where('estado', 'NOTIFICADO')
+                ->where('id', '!=', $entradaLocked->id)
+                ->update([
+                    'estado' => 'EXPIRADO',
+                    'notification_token' => null,
+                ]);
+
+            return ['reserva_id' => $reserva->id];
+        });
     }
-
-    // public function notificar(Request $request)
-    // {
-       
-    // }
-
-    // // Primeiro a aceitar
-    // public function aceitar(Request $request)
-    // {
-    //     $user = $request->user();
-    //     $data = $request->data;
-
-    //     if ($user->pontos < 3) {
-    //         return response()->json(['error' => 'Sem pontos'], 400);
-    //     }
-
-    //     return DB::transaction(function () use ($user, $data) {
-
-    //         $lugarLivre = Lugar::whereDoesntHave('reservas', function ($q) use ($data) {
-    //             $q->where('data', $data)
-    //               ->where('estado', 'ATIVA');
-    //         })
-    //         ->lockForUpdate()
-    //         ->first();
-
-    //         if (!$lugarLivre) {
-    //             return response()->json(['error' => 'Já foi ocupado'], 400);
-    //         }
-
-    //         $reserva = Reserva::create([
-    //             'utilizador_id' => $user->id,
-    //             'lugar_id' => $lugarLivre->id,
-    //             'data' => $data,
-    //             'estado' => 'ATIVA'
-    //         ]);
-
-    //         PointsService::deductReserva($user);
-
-    //         return response()->json($reserva);
-    //     });
-    // }
 }

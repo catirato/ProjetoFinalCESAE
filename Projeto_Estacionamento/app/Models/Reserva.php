@@ -10,13 +10,17 @@ class Reserva extends Model
     use HasFactory;
 
     protected $table = 'reserva';
+    public $timestamps = false;
 
     protected $fillable = [
         'utilizador_id',
         'lugar_id',
         'data',
         'estado',
-        'validada_por'
+        'validada_por',
+        'modo_reserva',
+        'justificacao_tipo',
+        'justificacao_detalhe',
     ];
 
     // Relações

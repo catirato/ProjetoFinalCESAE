@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    
+
     <!-- Header -->
     <div class="mb-8">
         <a href="{{ url('/reservas') }}" class="text-blue-600 hover:text-blue-800 flex items-center mb-4">
@@ -15,12 +15,17 @@
         </a>
         <h1 class="text-3xl font-bold text-gray-900">Detalhes da Reserva</h1>
     </div>
-    
+
     <!-- Main Card -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-        
+
         <!-- Status Banner -->
         @if(isset($reserva))
+            @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                <div class="bg-rose-600 text-white px-6 py-3">
+                    <p class="font-semibold">Reserva administrativa execional</p>
+                </div>
+            @endif
             @if($reserva->estado === 'ATIVA')
                 <div class="bg-blue-600 text-white px-6 py-4">
                     <div class="flex items-center justify-between">
@@ -70,18 +75,18 @@
                 </div>
             @endif
         @endif
-        
+
         <!-- Reservation Details -->
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                
+
                 <!-- Place Info -->
                 <div class="bg-gray-50 rounded-lg p-6 text-center">
                     <p class="text-sm text-gray-600 mb-2">Lugar Reservado</p>
                     <div class="text-6xl mb-2">🅿️</div>
                     <p class="text-4xl font-bold text-gray-900">{{ $reserva->lugar->numero ?? 'N/A' }}</p>
                 </div>
-                
+
                 <!-- Date Info -->
                 <div class="bg-gray-50 rounded-lg p-6">
                     <div class="space-y-4">
@@ -94,18 +99,22 @@
                                 {{ \Carbon\Carbon::parse($reserva->data)->locale('pt')->isoFormat('dddd') }}
                             </p>
                         </div>
-                        
+
                         <div>
                             <p class="text-sm text-gray-600">Reservado há</p>
-                            <p class="text-lg font-semibold text-gray-900">
-                                {{ \Carbon\Carbon::parse($reserva->created_at)->diffForHumans() }}
-                            </p>
+                            @if(!empty($reservaCriadaEm))
+                                <p class="text-lg font-semibold text-gray-900">
+                                    {{ \Carbon\Carbon::parse($reservaCriadaEm)->diffForHumans() }}
+                                </p>
+                            @else
+                                <p class="text-lg font-semibold text-gray-500">Informação indisponível</p>
+                            @endif
                         </div>
                     </div>
                 </div>
-                
+
             </div>
-            
+
             <!-- User Info -->
             <div class="border-t border-gray-200 pt-6">
                 <h3 class="font-bold text-gray-900 mb-4">Informações do Utilizador</h3>
@@ -120,7 +129,33 @@
                     </div>
                 </div>
             </div>
-            
+
+            <div class="border-t border-gray-200 pt-6 mt-6">
+                <h3 class="font-bold text-gray-900 mb-4">Tipo de Reserva</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Modo</p>
+                        <p class="font-semibold text-gray-900">
+                            {{ ($reserva->modo_reserva ?? 'COLAB') === 'ADMIN' ? 'Administrador' : 'Colaborador' }}
+                        </p>
+                    </div>
+                    @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                        <div>
+                            <p class="text-sm text-gray-600">Justificação</p>
+                            <p class="font-semibold text-gray-900">
+                                {{ str_replace('_', ' ', $reserva->justificacao_tipo ?? '-') }}
+                            </p>
+                        </div>
+                    @endif
+                </div>
+                @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN' && !empty($reserva->justificacao_detalhe))
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-600">Detalhes</p>
+                        <p class="font-semibold text-gray-900">{{ $reserva->justificacao_detalhe }}</p>
+                    </div>
+                @endif
+            </div>
+
             @if($reserva->validada_por)
                 <div class="border-t border-gray-200 pt-6 mt-6">
                     <h3 class="font-bold text-gray-900 mb-4">Validação</h3>
@@ -131,42 +166,61 @@
                     </div>
                 </div>
             @endif
-            
+
         </div>
-        
+
         <!-- Actions -->
-        @if($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+        @if(auth('utilizador')->user()->role === 'ADMIN' || ($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture()))
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-wrap justify-between items-center gap-3">
                     <div>
-                        <p class="text-sm text-gray-600">
-                            Pode cancelar esta reserva
-                            @if(\Carbon\Carbon::parse($reserva->data)->diffInHours(now()) > 24)
-                                e recuperar 3 pontos
-                            @else
-                                (sem recuperação de pontos)
-                            @endif
-                        </p>
+                        @if(auth('utilizador')->user()->role === 'ADMIN')
+                            <p class="text-sm text-gray-600">
+                                Ações administrativas desta reserva.
+                            </p>
+                        @else
+                            <p class="text-sm text-gray-600">
+                                Ao cancelar esta reserva, perde 2 pontos de penalização.
+                            </p>
+                        @endif
                     </div>
-                    <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" 
-                                onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                class="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
-                            Cancelar Reserva
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-3">
+                        @if(auth('utilizador')->user()->role === 'ADMIN')
+                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
+                               class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                                Editar Reserva
+                            </a>
+                            <form action="{{ route('admin.reservas.delete', $reserva->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Tem certeza que deseja apagar esta reserva? Esta ação é definitiva.')"
+                                        class="px-4 py-2 bg-red-700 text-white rounded-lg font-semibold hover:bg-red-800 transition">
+                                    Apagar Reserva
+                                </button>
+                            </form>
+                        @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+                            <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                        class="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
+                                    Cancelar Reserva
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             </div>
         @endif
-        
+
     </div>
-    
+
     <!-- Points Impact -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
         <h3 class="font-bold text-gray-900 mb-4">Impacto nos Pontos</h3>
-        
+
         @if(isset($movimentosPontos) && $movimentosPontos->count() > 0)
             <div class="space-y-3">
                 @foreach($movimentosPontos as $movimento)
@@ -200,7 +254,7 @@
             <p class="text-gray-600">Sem movimentos de pontos associados</p>
         @endif
     </div>
-    
+
     <!-- QR Code for Security -->
     @if($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isToday())
         <div class="bg-white rounded-xl shadow-lg p-6">
@@ -221,6 +275,6 @@
             </div>
         </div>
     @endif
-    
+
 </div>
 @endsection
