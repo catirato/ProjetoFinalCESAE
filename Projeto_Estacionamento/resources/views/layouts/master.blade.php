@@ -24,6 +24,16 @@
             <a href="{{ url('/') }}" class="btn btn-ghost text-xl font-bold">🚗 CESAE Estacionamento</a>
         </div>
         <div class="navbar-end gap-2">
+            @auth('utilizador')
+                @if(auth('utilizador')->user()->role === 'SEGURANCA')
+                    <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost btn-sm">Validações de Hoje</a>
+                @else
+                    <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
+                @endif
+            @else
+                <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
+            @endauth
+            <a href="{{ route('regras.sistema') }}" class="btn btn-ghost btn-sm">Regras do Sistema</a>
             @guest('utilizador')
                 <a href="{{ url('/login') }}" class="btn btn-primary btn-sm">Login</a>
                 {{-- <a href="{{ url('/register') }}" class="btn btn-outline btn-sm">Registar</a> --}}

@@ -10,6 +10,7 @@ class HistoricoEventos extends Model
     use HasFactory;
 
     protected $table = 'historico_eventos';
+    public $timestamps = false;
 
     protected $fillable = [
         'utilizador_id',

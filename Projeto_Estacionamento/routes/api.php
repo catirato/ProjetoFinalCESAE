@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimento-pontos', [PontosController::class, 'index']);
     Route::patch('/users/{id}/pontos', [PontosController::class, 'ajustar']);
 
-    // Reports
+    // Relatórios
     Route::post('/reports', [ReportController::class, 'store']);
     Route::get('/reports/pendentes', [ReportController::class, 'pendentes']);
     Route::patch('/reports/{id}/validar', [ReportController::class, 'validar']);

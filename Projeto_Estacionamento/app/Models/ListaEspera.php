@@ -15,10 +15,18 @@ class ListaEspera extends Model
         'utilizador_id',
         'data',
         'estado',
-        'prioridade'
+        'prioridade',
+        'notification_token',
+        'notificado_em',
+        'expira_em',
     ];
 
     public $timestamps = false;
+
+    protected $casts = [
+        'notificado_em' => 'datetime',
+        'expira_em' => 'datetime',
+    ];
 
     // Relações
     public function utilizador()

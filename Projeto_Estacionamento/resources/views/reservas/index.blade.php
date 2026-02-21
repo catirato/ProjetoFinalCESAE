@@ -1,15 +1,47 @@
 @extends('layouts.master')
 
-@section('title', 'Minhas Reservas')
+@section('title', auth('utilizador')->user()->role === 'ADMIN' ? 'Reservas (Admin)' : 'Minhas Reservas')
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    @php
+        $isAdmin = auth('utilizador')->user()->role === 'ADMIN';
+
+        $sortAtivas = request('sort_ativas', 'data');
+        $directionAtivas = request('direction_ativas', 'asc');
+        $sortHistorico = request('sort_historico', 'data');
+        $directionHistorico = request('direction_historico', 'desc');
+        $activeTab = request('tab', 'ativas');
+
+        $nextDirectionAtivas = function ($column) use ($sortAtivas, $directionAtivas) {
+            return $sortAtivas === $column && $directionAtivas === 'asc' ? 'desc' : 'asc';
+        };
+
+        $nextDirectionHistorico = function ($column) use ($sortHistorico, $directionHistorico) {
+            return $sortHistorico === $column && $directionHistorico === 'asc' ? 'desc' : 'asc';
+        };
+
+        $sortIconAtivas = function ($column) use ($sortAtivas, $directionAtivas) {
+            if ($sortAtivas !== $column) return '';
+            return $directionAtivas === 'asc' ? '↑' : '↓';
+        };
+
+        $sortIconHistorico = function ($column) use ($sortHistorico, $directionHistorico) {
+            if ($sortHistorico !== $column) return '';
+            return $directionHistorico === 'asc' ? '↑' : '↓';
+        };
+    @endphp
+
     
     <!-- Header -->
     <div class="mb-8 flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Minhas Reservas</h1>
-            <p class="text-gray-600 mt-1">Gerir as suas reservas de estacionamento</p>
+            <h1 class="text-3xl font-bold text-gray-900">
+                {{ auth('utilizador')->user()->role === 'ADMIN' ? 'Reservas de Todos os Utilizadores' : 'Minhas Reservas' }}
+            </h1>
+            <p class="text-gray-600 mt-1">
+                {{ auth('utilizador')->user()->role === 'ADMIN' ? 'Histórico e gestão global de reservas' : 'Gerir as suas reservas de estacionamento' }}
+            </p>
         </div>
         <a href="{{ url('/reservas/criar') }}" 
         class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center">
@@ -39,117 +71,175 @@
     </div>
     
     <!-- Ativas Tab -->
-    <div id="content-ativas" class="tab-content">
-        @if(isset($reservasAtivas) && $reservasAtivas->count() > 0)
-            <div class="grid gap-6">
-                @foreach($reservasAtivas as $reserva)
-                    <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                            <div class="flex items-start space-x-4 mb-4 md:mb-0">
-                                <!-- Place Icon -->
-                                <div class="bg-blue-100 text-blue-600 p-4 rounded-lg text-2xl font-bold">
-                                    {{ $reserva->lugar->numero }}
-                                </div>
-                                
-                                <!-- Info -->
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-900">
-                                        Lugar {{ $reserva->lugar->numero }}
-                                    </h3>
-                                    <p class="text-gray-600 mt-1">
-                                        📅 {{ \Carbon\Carbon::parse($reserva->data)->format('d/m/Y') }}
-                                        ({{ \Carbon\Carbon::parse($reserva->data)->locale('pt')->isoFormat('dddd') }})
-                                    </p>
-                                    
-                                    <!-- Status Badge -->
+    <div id="content-ativas" class="reservas-tab-content">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_ativas' => 'lugar', 'direction_ativas' => $nextDirectionAtivas('lugar'), 'tab' => 'ativas']) }}" class="hover:text-gray-700">
+                                Lugar Reservado {{ $sortIconAtivas('lugar') }}
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_ativas' => 'data', 'direction_ativas' => $nextDirectionAtivas('data'), 'tab' => 'ativas']) }}" class="hover:text-gray-700">
+                                Data da Reserva {{ $sortIconAtivas('data') }}
+                            </a>
+                        </th>
+                        @if($isAdmin)
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <a href="{{ request()->fullUrlWithQuery(['sort_ativas' => 'utilizador', 'direction_ativas' => $nextDirectionAtivas('utilizador'), 'tab' => 'ativas']) }}" class="hover:text-gray-700">
+                                    Utilizador {{ $sortIconAtivas('utilizador') }}
+                                </a>
+                            </th>
+                        @endif
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_ativas' => 'estado', 'direction_ativas' => $nextDirectionAtivas('estado'), 'tab' => 'ativas']) }}" class="hover:text-gray-700">
+                                Estado {{ $sortIconAtivas('estado') }}
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($reservasAtivas ?? [] as $reserva)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold inline-block">
+                                        Lugar {{ $reserva->lugar->numero ?? 'N/A' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ \Carbon\Carbon::parse($reserva->data)->format('d/m/Y') }}
+                                    ({{ \Carbon\Carbon::parse($reserva->data)->locale('pt')->isoFormat('dddd') }})
+                                </td>
+                                @if($isAdmin)
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $reserva->utilizador->nome ?? 'N/A' }}
+                                    </td>
+                                @endif
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     @if($reserva->estado === 'ATIVA')
-                                        <span class="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                             ✓ Reserva Ativa
                                         </span>
                                     @elseif($reserva->estado === 'PRESENTE')
-                                        <span class="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                             ✓ Presente
                                         </span>
                                     @endif
-                                    
+
                                     @if(\Carbon\Carbon::parse($reserva->data)->isToday())
-                                        <span class="inline-block mt-2 ml-2 px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">
-                                            🔥 Hoje!
+                                        <span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            🔥 Hoje
                                         </span>
                                     @endif
-                                </div>
-                            </div>
-                            
-                            <!-- Actions -->
-                            <div class="flex space-x-2">
-                                <a href="{{ url('/reservas/' . $reserva->id) }}" 
-                                   class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
-                                    Ver Detalhes
-                                </a>
-                                
-                                @if($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
-                                    <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" 
-                                                onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                                class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
-                                            Cancelar
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-                <div class="text-6xl mb-4">🅿️</div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Sem reservas ativas</h3>
-                <p class="text-gray-600 mb-6">Ainda não tem nenhuma reserva ativa</p>
-                <a href="{{ url('/reservas/criar') }}" 
-                   class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                    Criar Primeira Reserva
-                </a>
-            </div>
-        @endif
+
+                                    @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                                        <span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-rose-100 text-rose-800">
+                                            Reserva administrativa execional
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex items-center gap-3">
+                                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                            Ver detalhes
+                                        </a>
+
+                                        @if($isAdmin)
+                                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
+                                               class="text-indigo-600 hover:text-indigo-800">
+                                                Editar
+                                            </a>
+                                            <form action="{{ route('admin.reservas.delete', $reserva->id) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        onclick="return confirm('Tem certeza que deseja apagar esta reserva? Esta ação é definitiva.')"
+                                                        class="text-red-600 hover:text-red-800">
+                                                    Apagar
+                                                </button>
+                                            </form>
+                                        @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+                                            <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                                        class="text-red-600 hover:text-red-800">
+                                                    Cancelar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $isAdmin ? '5' : '4' }}" class="px-6 py-8 text-center text-gray-500">
+                                Sem reservas ativas.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
     
     <!-- Histórico Tab -->
-    <div id="content-historico" class="tab-content hidden">
-        @if(isset($reservasHistorico) && $reservasHistorico->count() > 0)
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
+    <div id="content-historico" class="reservas-tab-content hidden">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_historico' => 'lugar', 'direction_historico' => $nextDirectionHistorico('lugar'), 'tab' => 'historico', 'page' => 1]) }}" class="hover:text-gray-700">
+                                Lugar Reservado {{ $sortIconHistorico('lugar') }}
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_historico' => 'data', 'direction_historico' => $nextDirectionHistorico('data'), 'tab' => 'historico', 'page' => 1]) }}" class="hover:text-gray-700">
+                                Data da Reserva {{ $sortIconHistorico('data') }}
+                            </a>
+                        </th>
+                        @if($isAdmin)
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Lugar
+                                <a href="{{ request()->fullUrlWithQuery(['sort_historico' => 'utilizador', 'direction_historico' => $nextDirectionHistorico('utilizador'), 'tab' => 'historico', 'page' => 1]) }}" class="hover:text-gray-700">
+                                    Utilizador {{ $sortIconHistorico('utilizador') }}
+                                </a>
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Data
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Estado
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ações
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($reservasHistorico as $reserva)
+                        @endif
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_historico' => 'estado', 'direction_historico' => $nextDirectionHistorico('estado'), 'tab' => 'historico', 'page' => 1]) }}" class="hover:text-gray-700">
+                                Estado {{ $sortIconHistorico('estado') }}
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($reservasHistorico ?? [] as $reserva)
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="bg-gray-100 text-gray-600 px-3 py-1 rounded font-bold">
-                                            {{ $reserva->lugar->numero }}
+                                            {{ $reserva->lugar->numero ?? 'N/A' }}
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ \Carbon\Carbon::parse($reserva->data)->format('d/m/Y') }}
                                 </td>
+                                @if($isAdmin)
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $reserva->utilizador->nome ?? 'N/A' }}
+                                    </td>
+                                @endif
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @if($reserva->estado === 'PRESENTE')
                                         <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -164,30 +254,52 @@
                                             ⊘ Cancelada
                                         </span>
                                     @endif
+
+                                    @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                                        <span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-rose-100 text-rose-800">
+                                            Reserva administrativa execional
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="{{ url('/reservas/' . $reserva->id) }}" 
-                                       class="text-blue-600 hover:text-blue-900">
-                                        Ver detalhes
-                                    </a>
+                                    <div class="flex items-center gap-3">
+                                        <a href="{{ url('/reservas/' . $reserva->id) }}"
+                                           class="text-blue-600 hover:text-blue-900">
+                                            Ver detalhes
+                                        </a>
+                                        @if($isAdmin)
+                                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
+                                               class="text-indigo-600 hover:text-indigo-800">
+                                                Editar
+                                            </a>
+                                            <form action="{{ route('admin.reservas.delete', $reserva->id) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        onclick="return confirm('Tem certeza que deseja apagar esta reserva? Esta ação é definitiva.')"
+                                                        class="text-red-600 hover:text-red-800">
+                                                    Apagar
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            @if($reservasHistorico->hasPages())
-                <div class="mt-6">
-                    {{ $reservasHistorico->links() }}
-                </div>
-            @endif
-        @else
-            <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-                <div class="text-6xl mb-4">📋</div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Sem histórico</h3>
-                <p class="text-gray-600">Ainda não tem reservas anteriores</p>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $isAdmin ? '5' : '4' }}" class="px-6 py-8 text-center text-gray-500">
+                                Sem histórico de reservas.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        @if(isset($reservasHistorico) && method_exists($reservasHistorico, 'hasPages') && $reservasHistorico->hasPages())
+            <div class="mt-6">
+                {{ $reservasHistorico->links() }}
             </div>
         @endif
     </div>
@@ -197,7 +309,7 @@
 <script>
 function showTab(tabName) {
     // Hide all tabs
-    document.querySelectorAll('.tab-content').forEach(tab => {
+    document.querySelectorAll('.reservas-tab-content').forEach(tab => {
         tab.classList.add('hidden');
     });
     
@@ -214,5 +326,14 @@ function showTab(tabName) {
     document.getElementById('tab-' + tabName).classList.remove('border-transparent', 'text-gray-500');
     document.getElementById('tab-' + tabName).classList.add('border-blue-600', 'text-blue-600');
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const initialTab = @json($activeTab);
+    if (initialTab === 'historico') {
+        showTab('historico');
+    } else {
+        showTab('ativas');
+    }
+});
 </script>
 @endsection

@@ -63,7 +63,7 @@
     <!-- Quick Actions -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Ações Rápidas</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 {{ in_array(auth('utilizador')->user()->role, ['COLAB', 'ADMIN']) ? 'md:grid-cols-4' : 'md:grid-cols-3' }} gap-4">
             <a href="{{ url('/reservas/criar') }}" 
                class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
                 <div class="bg-blue-600 text-white p-3 rounded-lg mr-4">
@@ -81,7 +81,7 @@
                class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
                 <div class="bg-purple-600 text-white p-3 rounded-lg mr-4">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75Zm0 5.25h.008v.008H3.75V12Zm0 5.25h.008v.008H3.75v-.008Z"></path>
                     </svg>
                 </div>
                 <div>
@@ -102,8 +102,114 @@
                     <p class="text-sm text-gray-600">Histórico completo</p>
                 </div>
             </a>
+
+            @if(in_array(auth('utilizador')->user()->role, ['COLAB', 'ADMIN']))
+                <a href="{{ route('reports.create') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(224, 231, 255, 0.8);"
+                   onmouseover="this.style.backgroundColor='rgba(199, 210, 254, 0.95)'"
+                   onmouseout="this.style.backgroundColor='rgba(224, 231, 255, 0.8)'">
+                    <div class="text-white p-3 rounded-lg mr-4" style="background-color: #4f46e5;">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M10.5 1.5a.75.75 0 00-.75.75v.75H8.25A2.25 2.25 0 006 5.25v14.25a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 19.5V5.25A2.25 2.25 0 0015.75 3H14.25v-.75a.75.75 0 00-.75-.75h-3Zm2.25 2.25v-.75h-1.5v.75h1.5ZM8.25 4.5h7.5a.75.75 0 01.75.75v14.25a.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V5.25a.75.75 0 01.75-.75Zm1.5 4.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5Zm0 3a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5Zm0 3a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3Z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Submissão de Relatório</p>
+                        <p class="text-sm text-gray-600">Reportar ocorrência</p>
+                    </div>
+                </a>
+            @endif
+
         </div>
     </div>
+
+    @if(auth('utilizador')->user()->role === 'ADMIN')
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Ações Exclusivas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{{ url('/register') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(16, 185, 129, 0.2);"
+                   onmouseover="this.style.backgroundColor='rgba(5, 150, 105, 0.7)'"
+                   onmouseout="this.style.backgroundColor='rgba(16, 185, 129, 0.2)'">
+                    <div class="bg-emerald-600 text-white p-3 rounded-lg mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v6m3-3h-6M9 7a4 4 0 110-8 4 4 0 010 8zm0 2c-3.314 0-6 2.239-6 5v2h10"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Registar Utilizador</p>
+                        <p class="text-sm text-gray-600">Criar nova conta</p>
+                    </div>
+                </a>
+
+                <a href="{{ url('/reservas') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(207, 250, 254, 0.7);"
+                   onmouseover="this.style.backgroundColor='rgba(186, 230, 253, 0.95)'"
+                   onmouseout="this.style.backgroundColor='rgba(207, 250, 254, 0.7)'">
+                    <div class="p-3 rounded-lg mr-4" style="background-color: #67e8f9;">
+                        <svg class="w-6 h-6 text-cyan-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.483 9.246 5 7.5 5S4.168 5.483 3 6.253v13C4.168 18.483 5.754 18 7.5 18s3.332.483 4.5 1.253m0-13C13.168 5.483 14.754 5 16.5 5s3.332.483 4.5 1.253v13C19.832 18.483 18.246 18 16.5 18s-3.332.483-4.5 1.253"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Gestão de Reservas</p>
+                        <p class="text-sm text-gray-600">Histórico global</p>
+                    </div>
+                </a>
+
+                <a href="{{ url('/admin/relatorios') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(224, 231, 255, 0.8);"
+                   onmouseover="this.style.backgroundColor='rgba(199, 210, 254, 0.95)'"
+                   onmouseout="this.style.backgroundColor='rgba(224, 231, 255, 0.8)'">
+                    <div class="text-white p-3 rounded-lg mr-4" style="background-color: #4f46e5;">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Gestão de Relatórios</p>
+                        <p class="text-sm text-gray-600">Aceder aos relatórios</p>
+                    </div>
+                </a>
+
+                <a href="{{ route('admin.perfis.index') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(255, 228, 230, 0.85);"
+                   onmouseover="this.style.backgroundColor='rgba(254, 205, 211, 0.95)'"
+                   onmouseout="this.style.backgroundColor='rgba(255, 228, 230, 0.85)'">
+                    <div class="bg-rose-600 text-white p-3 rounded-lg mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2m12 0H7m10-8a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Gestão de Utilizadores</p>
+                        <p class="text-sm text-gray-600">Perfis e remoção</p>
+                    </div>
+                </a>
+
+                <a href="{{ route('admin.pontos.index') }}"
+                   class="flex items-center p-4 rounded-lg transition"
+                   style="background-color: rgba(254, 243, 199, 0.75);"
+                   onmouseover="this.style.backgroundColor='rgba(253, 230, 138, 0.95)'"
+                   onmouseout="this.style.backgroundColor='rgba(254, 243, 199, 0.75)'">
+                    <div class="bg-amber-600 text-white p-3 rounded-lg mr-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.105 0-2 .895-2 2m4 0a2 2 0 00-2-2m0 0V6m0 2v8m0 0v2m0-2a2 2 0 104 0m-4 0a2 2 0 11-4 0"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-900">Gestão de Pontos</p>
+                        <p class="text-sm text-gray-600">Ajuste por utilizador</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    @endif
     
     <!-- Two Column Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -127,6 +233,11 @@
                                     <span class="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                         {{ $reserva->estado }}
                                     </span>
+                                    @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                                        <span class="inline-block mt-2 ml-1 px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
+                                            Reserva administrativa execional
+                                        </span>
+                                    @endif
                                 </div>
                                 <a href="{{ url('/reservas/' . $reserva->id) }}" 
                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">

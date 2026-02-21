@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Reserva;
+use App\Models\Utilizador;
 use App\Services\PointsService;
 use App\Services\NotificationService;
 
@@ -26,11 +27,11 @@ class CheckReservations extends Command
                 NotificationService::notifyUser($reserva->utilizador->id, 'Não compareceu à reserva');
 
                 $admin = Utilizador::where('role', 'ADMIN')->first();
-$adminId = $admin->id;
+                if ($admin) {
+                    NotificationService::notifyUser($admin->id, 'Reserva não compareceu');
+                }
 
-                NotificationService::notifyUser($adminId, 'Reserva não compareceu');
-
-                NotificationService::notifyListaEspera($reserva->lugar_id);
+                NotificationService::notifyListaEspera($reserva->data, $reserva->lugar_id);
             }
         }
     }

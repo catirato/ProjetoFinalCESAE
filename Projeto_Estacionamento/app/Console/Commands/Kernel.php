@@ -18,8 +18,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('check:reservations')->dailyAt('10:31');
 
         // Reset mensal de pontos (último dia do mês)
-        $schedule->command('points:reset')->monthlyOn(28, '23:59');
-        //  28 funciona SEMPRE (Laravel ajusta para último dia)
+        $schedule->command('points:reset')->lastDayOfMonth('23:59');
     }
 
     protected function commands()

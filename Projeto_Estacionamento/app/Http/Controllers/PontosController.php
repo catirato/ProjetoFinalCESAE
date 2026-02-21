@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-// use App\Models\Utilizador;
-use App\Services\PointsService;
 use Illuminate\Http\Request;
-use App\Models\MovimentoPontos; // não sei se é este
-use Carbon\Carbon;
+use App\Models\MovimentoPontos;
+use App\Models\Utilizador;
+use App\Services\PointsService;
 
 class PontosController extends Controller
 {
@@ -27,37 +26,57 @@ class PontosController extends Controller
             ->whereYear('created_at', now()->year)
             ->sum('pontos');
         
-        $pontosGastos = abs(MovimentoPontos::where('utilizador_id', $user->id)
+        $pontosGastosRaw = MovimentoPontos::where('utilizador_id', $user->id)
             ->where('pontos', '<', 0)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('pontos'));
+            ->sum('pontos');
+        $pontosGastos = max(0, abs((int) $pontosGastosRaw));
         
         // Calcular dias até próximo reset
-        $diasProximoReset = now()->endOfMonth()->diffInDays(now());
+        $diasProximoReset = max(0, now()->startOfDay()->diffInDays(now()->copy()->endOfMonth()->startOfDay(), false));
         
-        return view('pontos.index', compact(
+        return view('pontos.pontos', compact(
             'movimentos',
             'pontosGanhos',
             'pontosGastos',
             'diasProximoReset'
         ));
+    }
 
-    //     return Utilizador::all()->map(function($user){
-    //         return [
-    //             'nome' => $user->nome,
-    //             'pontos' => $user->pontos,
-    //             'id' => $user->id
-    //         ];
-    //     });
-    // }
+    public function adminIndex()
+    {
+        $admin = auth('utilizador')->user();
+        if ($admin->role !== 'ADMIN') {
+            abort(403, 'Apenas administradores podem gerir pontos.');
+        }
 
-    // public function ajustar(Request $request, $id)
-    // {
-    //     $user = Utilizador::find($id);
-    //     if (!$user) return response()->json(['error'=>'Utilizador não encontrado'],404);
+        $utilizadores = Utilizador::query()
+            ->where('role', '!=', 'SEGURANCA')
+            ->orderBy('nome')
+            ->paginate(20);
 
-    //     PointsService::addPoints($user, $request->pontos);
-    //     return response()->json(['message'=>'Pontos ajustados']);
+        return view('pontos.admin', compact('utilizadores'));
+    }
+
+    public function adminAdjust(Request $request, $id)
+    {
+        $admin = auth('utilizador')->user();
+        if ($admin->role !== 'ADMIN') {
+            abort(403, 'Apenas administradores podem gerir pontos.');
+        }
+
+        $validated = $request->validate([
+            'ajuste' => ['required', 'integer', 'between:-100,100', 'not_in:0'],
+        ]);
+
+        $user = Utilizador::findOrFail($id);
+        if ($user->role === 'SEGURANCA') {
+            return back()->with('error', 'Utilizadores de segurança não têm gestão de pontos.');
+        }
+
+        PointsService::addPoints($user, (int) $validated['ajuste']);
+
+        return back()->with('success', "Pontos de {$user->nome} ajustados com sucesso.");
     }
 }
