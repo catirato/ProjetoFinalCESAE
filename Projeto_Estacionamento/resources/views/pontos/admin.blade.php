@@ -9,6 +9,16 @@
         <p class="text-gray-600 mt-1">Ajuste manual de pontos por utilizador (apenas administrador).</p>
     </div>
 
+    @if(isset($reportEmAjuste) && $reportEmAjuste)
+        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p class="text-blue-900 font-semibold">Ajuste em contexto de relatório</p>
+            <p class="text-blue-800 text-sm mt-1">
+                Relatório #{{ $reportEmAjuste->id }} de {{ $reportEmAjuste->utilizador->nome ?? 'N/A' }}.
+                Após aplicar o ajuste, o relatório será marcado como concluído.
+            </p>
+        </div>
+    @endif
+
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -33,6 +43,9 @@
                             <form action="{{ route('admin.pontos.adjust', $u->id) }}" method="POST" class="flex items-center gap-2">
                                 @csrf
                                 @method('PATCH')
+                                @if(isset($reportEmAjuste) && $reportEmAjuste)
+                                    <input type="hidden" name="report_id" value="{{ $reportEmAjuste->id }}">
+                                @endif
                                 <input type="number"
                                        name="ajuste"
                                        required
@@ -62,4 +75,3 @@
     </div>
 </div>
 @endsection
-

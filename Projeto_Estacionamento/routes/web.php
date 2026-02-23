@@ -78,7 +78,7 @@ Route::middleware(['auth:utilizador'])->group(function () {
         Route::get('/lista-espera/{id}/confirmar/{token}', [ListaEsperaController::class, 'confirmFromEmail'])->name('lista-espera.confirmar');
 
         // Pontos
-        Route::get('/pontos', [PontosController::class, 'index']);
+        Route::get('/pontos', [PontosController::class, 'index'])->name('pontos.index');
 
         // Relatórios (submissão por colaborador/admin)
         Route::get('/reports/submeter', [ReportController::class, 'create'])->name('reports.create');
@@ -98,6 +98,7 @@ Route::middleware(['auth:utilizador'])->group(function () {
         // Perfis (apenas admin)
         Route::get('/admin/perfis', [ProfileController::class, 'listAll'])->name('admin.perfis.index');
         Route::get('/admin/perfis/{id}', [ProfileController::class, 'showById'])->name('admin.perfis.show');
+        Route::get('/admin/perfis/{id}/historico', [PontosController::class, 'showByUser'])->name('admin.perfis.historico');
         Route::delete('/admin/perfis/{id}', [ProfileController::class, 'deleteUser'])->name('admin.perfis.delete');
 
         // Gestão global de reservas (apenas admin)
@@ -106,7 +107,9 @@ Route::middleware(['auth:utilizador'])->group(function () {
         Route::delete('/admin/reservas/{id}/apagar', [ReservaController::class, 'delete'])->name('admin.reservas.delete');
 
         Route::get('/admin/relatorios', [ReportController::class, 'index'])->name('admin.relatorios.index');
+        Route::get('/admin/relatorios/{id}/editar', [ReportController::class, 'edit'])->name('admin.relatorios.edit');
         Route::get('/admin/relatorios/{id}', [ReportController::class, 'show'])->name('admin.relatorios.show');
+        Route::patch('/admin/relatorios/{id}', [ReportController::class, 'update'])->name('admin.relatorios.update');
         Route::patch('/admin/relatorios/{id}/validar', [ReportController::class, 'validar'])->name('admin.relatorios.validar');
         Route::patch('/admin/relatorios/{id}/rejeitar', [ReportController::class, 'rejeitar'])->name('admin.relatorios.rejeitar');
     });

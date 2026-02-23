@@ -1,13 +1,24 @@
 @extends('layouts.master')
 
-@section('title', 'Meus Pontos')
+@section('title', 'Meu Histórico')
 
 @section('content')
+@php
+    $historicoUser = $historicoUser ?? auth('utilizador')->user();
+@endphp
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Meus Pontos</h1>
+        @if(auth('utilizador')->user()->role === 'ADMIN' && (int) auth('utilizador')->id() !== (int) $historicoUser->id)
+            <a href="{{ route('admin.perfis.index') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center mb-3">
+                ← Voltar aos perfis
+            </a>
+        @endif
+        <h1 class="text-3xl font-bold text-gray-900">Meu Histórico</h1>
+        @if((int) auth('utilizador')->id() !== (int) $historicoUser->id)
+            <p class="text-sm text-gray-500 mt-1">A visualizar histórico de: <span class="font-semibold">{{ $historicoUser->nome }}</span></p>
+        @endif
         <p class="text-gray-600 mt-1">Acompanhe o seu saldo e histórico de pontos</p>
     </div>
 
@@ -16,7 +27,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-yellow-100 text-sm font-medium uppercase tracking-wide">Saldo Atual</p>
-                <p class="text-6xl font-bold mt-2">{{ auth('utilizador')->user()->pontos }}</p>
+                <p class="text-6xl font-bold mt-2">{{ $historicoUser->pontos }}</p>
                 <p class="text-yellow-100 mt-2">pontos disponíveis</p>
             </div>
             <div class="text-8xl opacity-80">⭐</div>
@@ -87,6 +98,61 @@
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 class="text-xl font-bold text-gray-900">Histórico de Movimentos</h2>
+        </div>
+
+        <div class="p-6 border-b border-gray-200 bg-white">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Reservas por mês</h3>
+                    @php
+                        $maxReservasMes = max(array_merge([1], $reservasPorMesData ?? []));
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach(($reservasPorMesLabels ?? []) as $index => $label)
+                            @php
+                                $valor = (int) (($reservasPorMesData[$index] ?? 0));
+                                $largura = $maxReservasMes > 0 ? ($valor / $maxReservasMes) * 100 : 0;
+                                $larguraRender = $valor > 0 ? max($largura, 4) : 0;
+                            @endphp
+                            <div>
+                                <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                    <span class="font-medium">{{ $label }}</span>
+                                    <span class="font-semibold text-gray-800">{{ $valor }}</span>
+                                </div>
+                                <div class="h-3 bg-blue-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width: {{ $larguraRender }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Distribuição de estados das reservas</h3>
+                    @php
+                        $maxEstado = max(array_merge([1], $distribuicaoEstadosData ?? []));
+                        $estadoCores = ['bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-amber-500'];
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach(($distribuicaoEstadosLabels ?? []) as $index => $label)
+                            @php
+                                $valor = (int) (($distribuicaoEstadosData[$index] ?? 0));
+                                $largura = $maxEstado > 0 ? ($valor / $maxEstado) * 100 : 0;
+                                $larguraRender = $valor > 0 ? max($largura, 4) : 0;
+                                $cor = $estadoCores[$index] ?? 'bg-gray-500';
+                            @endphp
+                            <div>
+                                <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                    <span class="font-medium">{{ $label }}</span>
+                                    <span class="font-semibold text-gray-800">{{ $valor }}</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full {{ $cor }} rounded-full transition-all duration-500" style="width: {{ $larguraRender }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if(isset($movimentos) && $movimentos->count() > 0)

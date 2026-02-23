@@ -479,6 +479,9 @@ class ReservaController extends Controller
     public function getDisponibilidade(Request $request)
     {
         $data = $request->input('data');
+        $user = auth('utilizador')->user();
+        $modoPedido = strtoupper((string) $request->input('modo_reserva', $request->input('modo', 'COLAB')));
+        $isAdminMode = $user && $user->role === 'ADMIN' && $modoPedido === 'ADMIN';
 
         if (!$data) {
             return response()->json(['message' => 'Data é obrigatória.'], 422);
@@ -491,7 +494,33 @@ class ReservaController extends Controller
         }
 
         if ($dataCarbon->isWeekend()) {
-            return response()->json([]);
+            return response()->json([
+                'bloqueado' => false,
+                'lugares' => [],
+            ]);
+        }
+
+        // Colaborador: só pode ter uma reserva por dia (bloqueia seleção de lugares)
+        if (!$isAdminMode && $user) {
+            $reservaDoDia = Reserva::where('utilizador_id', $user->id)
+                ->where('data', $data)
+                ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->with('lugar:id,numero')
+                ->latest('id')
+                ->first();
+
+            if ($reservaDoDia) {
+                $numeroLugar = $reservaDoDia->lugar->numero ?? null;
+                $mensagem = 'Já tem uma reserva para este dia.';
+                if ($numeroLugar) {
+                    $mensagem .= ' Lugar reservado: ' . $numeroLugar . '.';
+                }
+
+                return response()->json([
+                    'bloqueado' => true,
+                    'mensagem' => $mensagem,
+                ]);
+            }
         }
 
         $lugares = Lugar::where('ativo', true)
@@ -517,7 +546,10 @@ class ReservaController extends Controller
                 ];
             });
 
-        return response()->json($lugares);
+        return response()->json([
+            'bloqueado' => false,
+            'lugares' => $lugares,
+        ]);
     }
 
 }

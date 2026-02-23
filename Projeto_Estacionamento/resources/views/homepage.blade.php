@@ -58,6 +58,12 @@
             </div>
             @endforeach
         </div>
+        <div class="mt-6 text-center">
+            <a href="{{ route('regras.sistema') }}"
+               class="text-blue-600 hover:text-blue-800 font-medium">
+                Ver Regras do Sistema para mais informação →
+            </a>
+        </div>
     </div>
 
 </div>

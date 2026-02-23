@@ -21,6 +21,41 @@
         <p class="text-gray-600 mt-1">Visualização global de perfis (apenas administrador).</p>
     </div>
 
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <form method="GET" action="{{ route('admin.perfis.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Pesquisar por nome</label>
+                <input type="text"
+                       id="search"
+                       name="search"
+                       value="{{ request('search', $search ?? '') }}"
+                       placeholder="Ex: Cristina"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <select id="role"
+                        name="role"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todas</option>
+                    <option value="ADMIN" {{ request('role', $role ?? '') === 'ADMIN' ? 'selected' : '' }}>ADMIN</option>
+                    <option value="COLAB" {{ request('role', $role ?? '') === 'COLAB' ? 'selected' : '' }}>COLAB</option>
+                    <option value="SEGURANCA" {{ request('role', $role ?? '') === 'SEGURANCA' ? 'selected' : '' }}>SEGURANCA</option>
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Filtrar
+                </button>
+                <a href="{{ route('admin.perfis.index') }}"
+                   class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                    Limpar filtros
+                </a>
+            </div>
+        </form>
+    </div>
+
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -59,6 +94,9 @@
                             <div class="flex items-center gap-4">
                                 <a href="{{ route('admin.perfis.show', $u->id) }}" class="text-blue-600 hover:text-blue-900">
                                     Ver perfil
+                                </a>
+                                <a href="{{ route('admin.perfis.historico', $u->id) }}" class="text-indigo-600 hover:text-indigo-900">
+                                    Ver histórico
                                 </a>
                                 @if($u->id !== auth('utilizador')->id())
                                     <form action="{{ route('admin.perfis.delete', $u->id) }}" method="POST">

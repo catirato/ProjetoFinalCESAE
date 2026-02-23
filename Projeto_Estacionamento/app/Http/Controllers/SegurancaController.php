@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\HistoricoEventos;
 use App\Models\Report;
 use App\Models\Reserva;
+use App\Models\Utilizador;
+use App\Services\PointsService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,6 +15,8 @@ class SegurancaController extends Controller
 {
     public function index()
     {
+        $this->processarNaoComparecenciasAtrasadas();
+
         $reservasHoje = $this->baseReservasHojeQuery()
             ->whereIn('estado', ['ATIVA', 'PRESENTE'])
             ->orderBy('estado')
@@ -24,6 +28,8 @@ class SegurancaController extends Controller
 
     public function pendentes()
     {
+        $this->processarNaoComparecenciasAtrasadas();
+
         $reservasHoje = $this->baseReservasHojeQuery()
             ->where('estado', 'ATIVA')
             ->orderBy('lugar_id')
@@ -34,6 +40,8 @@ class SegurancaController extends Controller
 
     public function validadas()
     {
+        $this->processarNaoComparecenciasAtrasadas();
+
         $reservasHoje = $this->baseReservasHojeQuery()
             ->where('estado', 'PRESENTE')
             ->orderBy('lugar_id')
@@ -93,5 +101,39 @@ class SegurancaController extends Controller
     {
         return Reserva::with(['utilizador', 'lugar'])
             ->whereDate('data', today());
+    }
+
+    private function processarNaoComparecenciasAtrasadas(): void
+    {
+        $limite = Carbon::today()->setTime(10, 31, 0);
+        if (now()->lt($limite)) {
+            return;
+        }
+
+        $reservasNaoValidadas = Reserva::with(['utilizador', 'lugar'])
+            ->whereDate('data', today())
+            ->where('estado', 'ATIVA')
+            ->whereNull('validada_por')
+            ->get();
+
+        if ($reservasNaoValidadas->isEmpty()) {
+            return;
+        }
+
+        foreach ($reservasNaoValidadas as $reserva) {
+            $reserva->estado = 'NAO_COMPARECEU';
+            $reserva->save();
+
+            PointsService::penalizeNoShow($reserva->utilizador);
+
+            NotificationService::notifyUser($reserva->utilizador->id, 'Não compareceu à reserva');
+
+            $admin = Utilizador::where('role', 'ADMIN')->first();
+            if ($admin) {
+                NotificationService::notifyUser($admin->id, 'Reserva não compareceu');
+            }
+
+            NotificationService::notifyListaEspera($reserva->data, $reserva->lugar_id);
+        }
     }
 }
