@@ -22,7 +22,7 @@ class CheckReservations extends Command
                 $reserva->estado = 'NAO_COMPARECEU';
                 $reserva->save();
 
-                PointsService::penalizeNoShow($reserva->utilizador);
+                PointsService::penalizeNoShow($reserva->utilizador, $reserva->id);
 
                 NotificationService::notifyUser($reserva->utilizador->id, 'Não compareceu à reserva');
 

@@ -144,8 +144,8 @@
                         Esta reserva custará <span class="font-bold">3 pontos</span>
                     </p>
                     <ul class="text-sm text-blue-700 space-y-1">
-                        <li>• Ao desmarcar: perde 2 pontos de penalização</li>
-                        <li>• Se não comparecer: perde 10 pontos adicionais</li>
+                        <li>• Ao desmarcar: perde 2 pontos de penalização (com devolução dos 3 da reserva)</li>
+                        <li>• Se não comparecer: penalização final de 10 pontos (com devolução dos 3 da reserva)</li>
                     </ul>
                 </div>
             </div>

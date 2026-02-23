@@ -86,7 +86,7 @@
                     <h3 class="font-bold text-red-900 mb-2">Como Perde Pontos</h3>
                     <ul class="text-red-800 space-y-1 text-sm">
                         <li>• Fazer reserva: -3 pontos por reserva</li>
-                        <li>• Não comparecer: -10 pontos adicionais</li>
+                        <li>• Não comparecer: -10 pontos (recupera os 3 da reserva)</li>
                         <li>• Cancelar após as 10h do próprio dia: -2 pontos</li>
                     </ul>
                 </div>
