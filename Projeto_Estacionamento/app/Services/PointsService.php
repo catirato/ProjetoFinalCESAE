@@ -31,13 +31,24 @@ class PointsService
         ]);
     }
 
-    public static function penalizeNoShow(Utilizador $user)
+    public static function penalizeNoShow(Utilizador $user, ?int $reservaId = null)
     {
+        // Devolve os 3 pontos da reserva e aplica penalização de falta (-10).
+        // Efeito líquido total da ocorrência: -10 pontos (não -13).
+        $user->pontos += 3;
         $user->pontos -= 10;
         $user->save();
 
         MovimentoPontos::create([
             'utilizador_id' => $user->id,
+            'reserva_id' => $reservaId,
+            'tipo' => 'AJUSTE',
+            'pontos' => 3
+        ]);
+
+        MovimentoPontos::create([
+            'utilizador_id' => $user->id,
+            'reserva_id' => $reservaId,
             'tipo' => 'FALTA',
             'pontos' => -10
         ]);

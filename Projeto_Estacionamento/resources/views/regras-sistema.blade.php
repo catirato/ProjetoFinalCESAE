@@ -90,7 +90,7 @@
             <h2 class="card-title">📌 Cancelamentos e Penalizações</h2>
             <ul class="list-disc list-inside space-y-1">
                 <li>Cancelamento voluntário de reserva até ás 10h: −2 pontos (recupera os 3 da reserva).</li>
-                <li>Falta de comparência (não validado até às 10h30): −10 pontos adicionais.</li>
+                <li>Falta de comparência (não validado até às 10h30): penalização final de −10 pontos (com devolução dos 3 da reserva).</li>
                 <li>É preferível cancelar do que faltar.</li>
                 <li>O utilizador pode ficar com saldo negativo.</li>
             </ul>
