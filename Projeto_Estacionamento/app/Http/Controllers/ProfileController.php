@@ -27,19 +27,36 @@ class ProfileController extends Controller
         }
 
         $allowedSorts = ['nome', 'email', 'telemovel', 'role'];
+        $allowedRoles = ['ADMIN', 'SEGURANCA', 'COLAB'];
         $sort = $request->get('sort', 'nome');
         $direction = strtolower($request->get('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $search = trim((string) $request->get('search', ''));
+        $role = strtoupper(trim((string) $request->get('role', '')));
 
         if (!in_array($sort, $allowedSorts, true)) {
             $sort = 'nome';
         }
 
-        $utilizadores = Utilizador::query()
+        if (!in_array($role, $allowedRoles, true)) {
+            $role = '';
+        }
+
+        $query = Utilizador::query();
+
+        if ($search !== '') {
+            $query->where('nome', 'like', '%' . $search . '%');
+        }
+
+        if ($role !== '') {
+            $query->where('role', $role);
+        }
+
+        $utilizadores = $query
             ->orderBy($sort, $direction)
             ->paginate(20)
             ->withQueryString();
 
-        return view('perfil.lista', compact('utilizadores'));
+        return view('perfil.lista', compact('utilizadores', 'search', 'role'));
     }
 
     public function showById($id)

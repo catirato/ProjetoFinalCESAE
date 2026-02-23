@@ -16,6 +16,13 @@ class Report extends Model
         'tipo',
         'descricao',
         'estado',
+        'ajuste_pontos_necessario',
+        'ajuste_pontos_concluido',
+    ];
+
+    protected $casts = [
+        'ajuste_pontos_necessario' => 'boolean',
+        'ajuste_pontos_concluido' => 'boolean',
     ];
 
     public function utilizador()

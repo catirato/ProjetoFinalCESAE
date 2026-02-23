@@ -254,7 +254,23 @@ function checkAvailability() {
             }
             return response.json();
         })
-        .then(places => {
+        .then(payload => {
+            const bloqueado = payload && payload.bloqueado === true;
+            if (bloqueado) {
+                placesLoading.style.display = 'none';
+                placesContent.style.display = 'block';
+                placesContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-6xl mb-4">🔒</div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Data bloqueada para nova reserva</h3>
+                        <p class="text-gray-600">${payload.mensagem ?? 'Já existe uma reserva para este dia.'}</p>
+                    </div>
+                `;
+                submitButton.disabled = true;
+                return;
+            }
+
+            const places = Array.isArray(payload) ? payload : (payload?.lugares ?? []);
             loadPlaces(places);
         })
         .catch(() => {

@@ -10,7 +10,7 @@
             <p class="text-gray-600 mt-1">Visualização completa (apenas leitura).</p>
         </div>
         <a href="{{ route('admin.relatorios.index') }}"
-           class="inline-flex items-center px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition font-medium">
+           class="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center">
             Voltar aos Relatórios
         </a>
     </div>
@@ -35,6 +35,30 @@
             </div>
         </div>
 
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Ajuste de Pontos</p>
+            @if($report->estado === 'VALIDADO')
+                @if($report->ajuste_pontos_necessario ?? false)
+                    @if($report->ajuste_pontos_concluido ?? false)
+                        <p class="text-gray-900 mt-1">Sim. O ajuste de pontos foi concluído.</p>
+                    @else
+                        <p class="text-gray-900 mt-1">Sim. O ajuste de pontos está pendente.</p>
+                    @endif
+                @else
+                    <p class="text-gray-900 mt-1">Não. Este relatório foi validado sem ajuste de pontos.</p>
+                @endif
+            @elseif($report->estado === 'REJEITADO')
+                <p class="text-gray-900 mt-1">Não aplicável. O relatório foi rejeitado.</p>
+            @else
+                <p class="text-gray-900 mt-1">Ainda não definido. O relatório está pendente.</p>
+            @endif
+
+            <a href="{{ route('admin.pontos.index', ['report_id' => $report->id]) }}"
+               class="inline-flex items-center mt-3 px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium">
+                Ir para Gestão de Pontos
+            </a>
+        </div>
+
         <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Descrição Completa</p>
             <div class="mt-2 p-4 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 whitespace-pre-wrap break-words">
@@ -42,44 +66,12 @@
             </div>
         </div>
 
-        @if($report->estado === 'PENDENTE')
-            <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-100">
-                <form id="validar-report-{{ $report->id }}" method="POST" action="{{ route('admin.relatorios.validar', $report->id) }}">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="ajustar_pontos" value="0">
-                    <button type="button"
-                            onclick="confirmarAjustePontos('validar-report-{{ $report->id }}')"
-                            class="inline-flex items-center px-3 py-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition font-medium">
-                        Validar
-                    </button>
-                </form>
-                <form method="POST" action="{{ route('admin.relatorios.rejeitar', $report->id) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit"
-                            class="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition font-medium">
-                        Rejeitar
-                    </button>
-                </form>
-            </div>
-        @endif
+        <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-100">
+            <a href="{{ route('admin.relatorios.edit', $report->id) }}"
+               class="inline-flex items-center px-4 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
+                Editar relatório
+            </a>
+        </div>
     </div>
 </div>
-
-<script>
-    function confirmarAjustePontos(formId) {
-        const precisaAjustar = window.confirm('É necessário algum ajuste de pontos para este relatório?');
-
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        const inputAjuste = form.querySelector('input[name="ajustar_pontos"]');
-        if (inputAjuste) {
-            inputAjuste.value = precisaAjustar ? '1' : '0';
-        }
-
-        form.submit();
-    }
-</script>
 @endsection

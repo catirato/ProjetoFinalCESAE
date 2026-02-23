@@ -21,6 +21,41 @@
         <p class="text-gray-600 mt-1">Lista de relatórios submetidos.</p>
     </div>
 
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <form method="GET" action="{{ route('admin.relatorios.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Pesquisar por nome</label>
+                <input type="text"
+                       id="search"
+                       name="search"
+                       value="{{ request('search', $search ?? '') }}"
+                       placeholder="Ex: Cristina"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <select id="role"
+                        name="role"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todas</option>
+                    <option value="ADMIN" {{ request('role', $role ?? '') === 'ADMIN' ? 'selected' : '' }}>ADMIN</option>
+                    <option value="COLAB" {{ request('role', $role ?? '') === 'COLAB' ? 'selected' : '' }}>COLAB</option>
+                    <option value="SEGURANCA" {{ request('role', $role ?? '') === 'SEGURANCA' ? 'selected' : '' }}>SEGURANCA</option>
+                </select>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Filtrar
+                </button>
+                <a href="{{ route('admin.relatorios.index') }}"
+                   class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                    Limpar filtros
+                </a>
+            </div>
+        </form>
+    </div>
+
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -71,34 +106,16 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ $report->estado }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="px-6 py-4 text-sm">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <a href="{{ route('admin.relatorios.show', $report->id) }}"
                                    class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium">
                                     Ver
                                 </a>
-                                @if($report->estado === 'PENDENTE')
-                                    <form id="validar-report-{{ $report->id }}" method="POST" action="{{ route('admin.relatorios.validar', $report->id) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="ajustar_pontos" value="0">
-                                        <button type="button"
-                                                onclick="confirmarAjustePontos('validar-report-{{ $report->id }}')"
-                                                class="inline-flex items-center px-3 py-2 rounded-lg bg-green-100 text-green-800 hover:bg-green-200 transition font-medium">
-                                            Validar
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ route('admin.relatorios.rejeitar', $report->id) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit"
-                                                class="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition font-medium">
-                                            Rejeitar
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-gray-400">Sem ações</span>
-                                @endif
+                                <a href="{{ route('admin.relatorios.edit', $report->id) }}"
+                                   class="inline-flex items-center px-3 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
+                                    Editar
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -116,19 +133,4 @@
     </div>
 </div>
 
-<script>
-    function confirmarAjustePontos(formId) {
-        const precisaAjustar = window.confirm('É necessário algum ajuste de pontos para este relatório?');
-
-        const form = document.getElementById(formId);
-        if (!form) return;
-
-        const inputAjuste = form.querySelector('input[name="ajustar_pontos"]');
-        if (inputAjuste) {
-            inputAjuste.value = precisaAjustar ? '1' : '0';
-        }
-
-        form.submit();
-    }
-</script>
 @endsection
