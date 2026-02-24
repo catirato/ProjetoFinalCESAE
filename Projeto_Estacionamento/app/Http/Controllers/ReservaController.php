@@ -21,6 +21,12 @@ class ReservaController extends Controller
     public function index(Request $request)
     {
         $user = auth('utilizador')->user();
+        $filtroNome = trim((string) $request->get('filtro_nome', ''));
+        $filtroFuncao = strtoupper(trim((string) $request->get('filtro_funcao', '')));
+        $funcoesValidas = ['ADMIN', 'SEGURANCA', 'COLAB'];
+        if (!in_array($filtroFuncao, $funcoesValidas, true)) {
+            $filtroFuncao = '';
+        }
 
         $allowedSortsAdmin = ['lugar', 'data', 'utilizador', 'estado'];
         $allowedSortsUser = ['lugar', 'data', 'estado'];
@@ -43,6 +49,17 @@ class ReservaController extends Controller
                 ->where('estado', 'ATIVA')
                 ->where('data', '>=', today());
 
+            if ($filtroNome !== '' || $filtroFuncao !== '') {
+                $ativasQuery->whereHas('utilizador', function ($q) use ($filtroNome, $filtroFuncao) {
+                    if ($filtroNome !== '') {
+                        $q->where('nome', 'like', '%' . $filtroNome . '%');
+                    }
+                    if ($filtroFuncao !== '') {
+                        $q->where('role', $filtroFuncao);
+                    }
+                });
+            }
+
             if ($sortAtivas === 'lugar') {
                 $ativasQuery->join('lugar as l', 'l.id', '=', 'reserva.lugar_id')
                     ->select('reserva.*')
@@ -62,6 +79,17 @@ class ReservaController extends Controller
                     $q->where('estado', '!=', 'ATIVA')
                         ->orWhere('data', '<', today());
                 });
+
+            if ($filtroNome !== '' || $filtroFuncao !== '') {
+                $historicoQuery->whereHas('utilizador', function ($q) use ($filtroNome, $filtroFuncao) {
+                    if ($filtroNome !== '') {
+                        $q->where('nome', 'like', '%' . $filtroNome . '%');
+                    }
+                    if ($filtroFuncao !== '') {
+                        $q->where('role', $filtroFuncao);
+                    }
+                });
+            }
 
             if ($sortHistorico === 'lugar') {
                 $historicoQuery->join('lugar as l', 'l.id', '=', 'reserva.lugar_id')
@@ -127,7 +155,7 @@ class ReservaController extends Controller
                 ->withQueryString();
         }
 
-        return view('reservas.index', compact('reservasAtivas', 'reservasHistorico'));
+        return view('reservas.index', compact('reservasAtivas', 'reservasHistorico', 'filtroNome', 'filtroFuncao'));
     }
 
     public function create()
@@ -143,20 +171,26 @@ class ReservaController extends Controller
             ? strtoupper((string) $request->input('modo_reserva', $request->input('modo', 'COLAB')))
             : 'COLAB';
 
-        $validationRules = [
-            'data' => 'required|date',
-        ];
+        $validationRules = [];
 
         if ($isAdmin) {
             $validationRules['modo_reserva'] = 'required|in:COLAB,ADMIN';
+            $validationRules['tipo_periodo'] = 'required|in:UNICO,INTERVALO';
+            $validationRules['data'] = 'required_if:tipo_periodo,UNICO|nullable|date';
+            $validationRules['periodos'] = 'required_if:tipo_periodo,INTERVALO|nullable|array|min:1';
+            $validationRules['periodos.*.data_inicio'] = 'required_with:periodos|date';
+            $validationRules['periodos.*.data_fim'] = 'required_with:periodos|date';
             $validationRules['justificacao_tipo'] = 'required_if:modo_reserva,ADMIN|nullable|in:EVENTO,OBRAS,MOBILIDADE_REDUZIDA,OUTRO';
             $validationRules['justificacao_detalhe'] = 'nullable|string|max:500';
-            $validationRules['lugar_id'] = 'required_without:lugar_ids|nullable|exists:lugar,id';
-            $validationRules['lugar_ids'] = 'required_without:lugar_id|array|min:1';
+            $validationRules['lugar_id'] = 'nullable|exists:lugar,id';
+            $validationRules['lugar_ids'] = 'nullable|array|min:1';
             $validationRules['lugar_ids.*'] = 'integer|exists:lugar,id|distinct';
+            $validationRules['lugares_por_dia'] = 'nullable|array';
+            $validationRules['lugares_por_dia.*'] = 'nullable|array|min:1';
+            $validationRules['lugares_por_dia.*.*'] = 'integer|exists:lugar,id|distinct';
         } else {
+            $validationRules['data'] = 'required|date';
             $validationRules['lugar_id'] = 'required|exists:lugar,id';
-            $validationRules['data'] .= '|after:today|before:' . now()->addDays(31)->format('Y-m-d');
         }
 
         $validated = $request->validate($validationRules, [
@@ -164,22 +198,17 @@ class ReservaController extends Controller
         ]);
         $modoReserva = $isAdmin ? strtoupper((string) ($validated['modo_reserva'] ?? $modoPedido)) : 'COLAB';
         $isAdminMode = $isAdmin && $modoReserva === 'ADMIN';
+        $tipoPeriodo = $isAdmin ? strtoupper((string) ($validated['tipo_periodo'] ?? 'UNICO')) : 'UNICO';
+
+        if (!$isAdminMode && $tipoPeriodo === 'INTERVALO') {
+            return back()->withInput()->withErrors([
+                'tipo_periodo' => 'Reserva para vários dias está disponível apenas no modo administrativo.',
+            ]);
+        }
 
         if (!$isAdminMode) {
             $validated['justificacao_tipo'] = null;
             $validated['justificacao_detalhe'] = null;
-            $validatedDataLimit = now()->addDays(31)->toDateString();
-            if (Carbon::parse($validated['data'])->lte(today()) || Carbon::parse($validated['data'])->gt($validatedDataLimit)) {
-                return back()->withInput()->withErrors([
-                    'data' => 'A data deve ser no intervalo permitido para colaboradores.',
-                ]);
-            }
-        }
-
-        if (Carbon::parse($validated['data'])->isWeekend()) {
-            return back()->withInput()->withErrors([
-                'data' => 'Sábado e domingo estão indisponíveis para reserva.',
-            ]);
         }
 
         if ($isAdminMode && $validated['justificacao_tipo'] === 'OUTRO' && empty($validated['justificacao_detalhe'])) {
@@ -188,120 +217,249 @@ class ReservaController extends Controller
             ]);
         }
 
-        if (!$isAdminMode && empty($validated['lugar_id'])) {
-            return back()->withInput()->withErrors([
-                'lugar_id' => 'Selecione um lugar.',
-            ]);
-        }
+        $datasReserva = [];
+        $selecoesPorDia = [];
+        if ($tipoPeriodo === 'INTERVALO') {
+            $periodosInput = $validated['periodos'] ?? [];
 
-        if ($isAdminMode && empty($validated['lugar_ids']) && !empty($validated['lugar_id'])) {
-            $validated['lugar_ids'] = [(int) $validated['lugar_id']];
-        }
+            $legacyDataInicio = $validated['data_inicio'] ?? null;
+            $legacyDataFim = $validated['data_fim'] ?? null;
+            if (empty($periodosInput) && !empty($legacyDataInicio) && !empty($legacyDataFim)) {
+                $periodosInput[] = [
+                    'data_inicio' => $legacyDataInicio,
+                    'data_fim' => $legacyDataFim,
+                ];
+            }
 
-        $lugarIds = $isAdminMode
-            ? array_values(array_unique(array_map('intval', $validated['lugar_ids'] ?? [])))
-            : [(int) $validated['lugar_id']];
-
-        if (empty($lugarIds)) {
-            return back()->withInput()->withErrors([
-                'lugar_id' => 'Selecione pelo menos um lugar.',
-            ]);
-        }
-
-        $lugaresSelecionados = Lugar::whereIn('id', $lugarIds)->get()->keyBy('id');
-        foreach ($lugarIds as $lugarId) {
-            $lugar = $lugaresSelecionados->get($lugarId);
-            if (!$lugar || in_array((int) $lugar->numero, self::LUGARES_FIXOS, true)) {
+            try {
+                $datasReserva = $this->buildWeekdayDateRangesFromPeriods($periodosInput);
+            } catch (\InvalidArgumentException $e) {
                 return back()->withInput()->withErrors([
-                    'lugar_id' => 'Um dos lugares selecionados está reservado de forma permanente e não pode ser escolhido.',
+                    'periodos' => $e->getMessage(),
                 ]);
+            }
+
+            if (empty($datasReserva)) {
+                return back()->withInput()->withErrors([
+                    'periodos' => 'Os períodos selecionados não contêm dias úteis reserváveis.',
+                ]);
+            }
+
+            $lugaresPorDiaInput = $validated['lugares_por_dia'] ?? [];
+            foreach ($datasReserva as $dataReserva) {
+                $lugarIdsDia = array_values(array_unique(array_map('intval', $lugaresPorDiaInput[$dataReserva] ?? [])));
+                if (empty($lugarIdsDia)) {
+                    return back()->withInput()->withErrors([
+                        'lugares_por_dia' => 'Selecione pelo menos um lugar para o dia ' . Carbon::parse($dataReserva)->format('d/m/Y') . '.',
+                    ]);
+                }
+                $selecoesPorDia[$dataReserva] = $lugarIdsDia;
+            }
+        } else {
+            $reservaData = Carbon::parse($validated['data']);
+            if (!$isAdminMode) {
+                $mensagemRegraData = $this->validateColabReservationDate($reservaData);
+                if ($mensagemRegraData !== null) {
+                    return back()->withInput()->withErrors([
+                        'data' => $mensagemRegraData,
+                    ]);
+                }
+            }
+
+            if ($reservaData->isWeekend()) {
+                return back()->withInput()->withErrors([
+                    'data' => 'Sábado e domingo estão indisponíveis para reserva.',
+                ]);
+            }
+
+            $datasReserva[] = $reservaData->toDateString();
+            if (!$isAdminMode && empty($validated['lugar_id'])) {
+                return back()->withInput()->withErrors([
+                    'lugar_id' => 'Selecione um lugar.',
+                ]);
+            }
+
+            if ($isAdminMode && empty($validated['lugar_ids']) && !empty($validated['lugar_id'])) {
+                $validated['lugar_ids'] = [(int) $validated['lugar_id']];
+            }
+
+            $lugarIds = $isAdminMode
+                ? array_values(array_unique(array_map('intval', $validated['lugar_ids'] ?? [])))
+                : [(int) $validated['lugar_id']];
+
+            if (empty($lugarIds)) {
+                return back()->withInput()->withErrors([
+                    'lugar_id' => 'Selecione pelo menos um lugar.',
+                ]);
+            }
+            $selecoesPorDia[$reservaData->toDateString()] = $lugarIds;
+        }
+
+        $lugarIds = collect($selecoesPorDia)->flatten()->unique()->values()->all();
+        $lugaresSelecionados = Lugar::whereIn('id', $lugarIds)->get()->keyBy('id');
+        foreach ($selecoesPorDia as $dataReserva => $lugarIdsDia) {
+            foreach ($lugarIdsDia as $lugarId) {
+                $lugar = $lugaresSelecionados->get($lugarId);
+                if (!$lugar || in_array((int) $lugar->numero, self::LUGARES_FIXOS, true)) {
+                    return back()->withInput()->withErrors([
+                        'lugar_id' => 'Um dos lugares selecionados está reservado de forma permanente e não pode ser escolhido.',
+                    ]);
+                }
             }
         }
 
         if (!$isAdminMode) {
             // Verificar pontos
-            if ($user->pontos < 3) {
-                return back()->with('error', 'Não tem pontos suficientes! Precisa de 3 pontos.');
+            $pontosNecessarios = 3 * count($datasReserva);
+            if ($user->pontos < $pontosNecessarios) {
+                return back()->with('error', "Não tem pontos suficientes! Precisa de {$pontosNecessarios} pontos.");
             }
 
-            // Verificar se já tem reserva nesse dia
+            // Verificar se já tem reserva em algum dos dias
             $jaTemReserva = Reserva::where('utilizador_id', $user->id)
-                ->where('data', $validated['data'])
+                ->whereIn('data', $datasReserva)
                 ->whereIn('estado', ['ATIVA', 'PRESENTE'])
                 ->exists();
 
             if ($jaTemReserva) {
-                return back()->with('error', 'Já tem uma reserva para este dia!');
+                return back()->with('error', 'Já tem pelo menos uma reserva ativa num dos dias selecionados.');
             }
-
         }
 
-        // Verificar se algum dos lugares já está reservado na data (inclui modo admin)
-        $lugaresOcupados = Reserva::whereIn('lugar_id', $lugarIds)
-            ->where('data', $validated['data'])
-            ->whereIn('estado', ['ATIVA', 'PRESENTE'])
-            ->pluck('lugar_id')
-            ->all();
+        // Verificar conflitos para cada dia com os lugares selecionados nesse dia
+        $ocupacoes = collect();
+        foreach ($selecoesPorDia as $dataReserva => $lugarIdsDia) {
+            $ocupacoesDia = Reserva::with('lugar:id,numero')
+                ->whereIn('lugar_id', $lugarIdsDia)
+                ->where('data', $dataReserva)
+                ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->get();
+            if ($ocupacoesDia->isNotEmpty()) {
+                $ocupacoes = $ocupacoes->merge($ocupacoesDia);
+            }
+        }
 
-        if (!empty($lugaresOcupados)) {
-            $lugaresTexto = Lugar::whereIn('id', $lugaresOcupados)
-                ->orderBy('numero')
-                ->pluck('numero')
-                ->implode(', ');
+        if ($ocupacoes->isNotEmpty()) {
+            $detalhes = $ocupacoes
+                ->take(5)
+                ->map(function ($reserva) {
+                    $numero = $reserva->lugar->numero ?? '?';
+                    return "Lugar {$numero} em " . Carbon::parse($reserva->data)->format('d/m/Y');
+                })
+                ->implode('; ');
 
-            return back()->with('error', 'Os seguintes lugares já estão reservados para este dia: ' . $lugaresTexto . '.');
+            return back()->with('error', 'Existem conflitos de disponibilidade: ' . $detalhes . '.');
         }
 
         $reservasCriadas = [];
-        foreach ($lugarIds as $lugarId) {
-            $reserva = Reserva::create([
-                'utilizador_id' => $user->id,
-                'lugar_id' => $lugarId,
-                'data' => $validated['data'],
-                'estado' => 'ATIVA',
-                'modo_reserva' => $isAdminMode ? 'ADMIN' : 'COLAB',
-                'justificacao_tipo' => $isAdminMode ? $validated['justificacao_tipo'] : null,
-                'justificacao_detalhe' => $isAdminMode ? ($validated['justificacao_detalhe'] ?? null) : null,
-            ]);
-            $reservasCriadas[] = $reserva;
+        DB::transaction(function () use ($selecoesPorDia, $user, $isAdminMode, $validated, &$reservasCriadas) {
+            foreach ($selecoesPorDia as $dataReserva => $lugarIdsDia) {
+                foreach ($lugarIdsDia as $lugarId) {
+                    $reserva = Reserva::create([
+                        'utilizador_id' => $user->id,
+                        'lugar_id' => $lugarId,
+                        'data' => $dataReserva,
+                        'estado' => 'ATIVA',
+                        'modo_reserva' => $isAdminMode ? 'ADMIN' : 'COLAB',
+                        'justificacao_tipo' => $isAdminMode ? $validated['justificacao_tipo'] : null,
+                        'justificacao_detalhe' => $isAdminMode ? ($validated['justificacao_detalhe'] ?? null) : null,
+                    ]);
+                    $reservasCriadas[] = $reserva;
 
-            if (!$isAdminMode) {
-                // Descontar pontos
-                $user->decrement('pontos', 3);
+                    if (!$isAdminMode) {
+                        // Descontar pontos
+                        $user->decrement('pontos', 3);
 
-                // Registar movimento de pontos
-                MovimentoPontos::create([
-                    'utilizador_id' => $user->id,
-                    'reserva_id' => $reserva->id,
-                    'tipo' => 'RESERVA',
-                    'pontos' => -3,
-                ]);
-            }
+                        // Registar movimento de pontos
+                        MovimentoPontos::create([
+                            'utilizador_id' => $user->id,
+                            'reserva_id' => $reserva->id,
+                            'tipo' => 'RESERVA',
+                            'pontos' => -3,
+                        ]);
+                    }
 
-            // Registar no histórico
-            $sufixoAdmin = '';
-            if ($isAdminMode) {
-                $sufixoAdmin = " (reserva como ADMIN - {$validated['justificacao_tipo']}";
-                if (!empty($validated['justificacao_detalhe'])) {
-                    $sufixoAdmin .= ": {$validated['justificacao_detalhe']}";
+                    // Registar no histórico
+                    $sufixoAdmin = '';
+                    if ($isAdminMode) {
+                        $sufixoAdmin = " (reserva como ADMIN - {$validated['justificacao_tipo']}";
+                        if (!empty($validated['justificacao_detalhe'])) {
+                            $sufixoAdmin .= ": {$validated['justificacao_detalhe']}";
+                        }
+                        $sufixoAdmin .= ')';
+                    }
+
+                    HistoricoEventos::create([
+                        'utilizador_id' => $user->id,
+                        'tipo_evento' => 'RESERVA',
+                        'entidade_id' => $reserva->id,
+                        'acao' => 'CRIADO',
+                        'descricao' => "Reservou o lugar {$reserva->lugar->numero} para " . Carbon::parse($dataReserva)->format('d/m/Y') . $sufixoAdmin,
+                    ]);
                 }
-                $sufixoAdmin .= ')';
+            }
+        });
+
+        if ($isAdminMode) {
+            $diasSelecionados = count($selecoesPorDia);
+            if ($diasSelecionados > 1) {
+                return redirect('/reservas')->with('success', count($reservasCriadas) . " reserva(s) administrativa(s) criada(s) para {$diasSelecionados} dia(s) com sucesso.");
             }
 
-            HistoricoEventos::create([
-                'utilizador_id' => $user->id,
-                'tipo_evento' => 'RESERVA',
-                'entidade_id' => $reserva->id,
-                'acao' => 'CRIADO',
-                'descricao' => "Reservou o lugar {$reserva->lugar->numero} para " . Carbon::parse($validated['data'])->format('d/m/Y') . $sufixoAdmin,
-            ]);
+            return redirect('/reservas')->with('success', count($reservasCriadas) . ' reserva(s) administrativa(s) criada(s) com sucesso.');
         }
 
-        return redirect('/reservas')->with('success', $isAdminMode
-            ? count($reservasCriadas) . ' reserva(s) administrativa(s) criada(s) com sucesso.'
-            : 'Reserva criada com sucesso!');
+        return redirect('/reservas')->with('success', 'Reserva criada com sucesso!');
     }
 
+    private function buildWeekdayDateRange(Carbon $dataInicio, Carbon $dataFim): array
+    {
+        $datas = [];
+        $cursor = $dataInicio->copy()->startOfDay();
+        $fim = $dataFim->copy()->startOfDay();
+
+        while ($cursor->lte($fim)) {
+            if (!$cursor->isWeekend()) {
+                $datas[] = $cursor->toDateString();
+            }
+            $cursor->addDay();
+        }
+
+        return $datas;
+    }
+
+    private function buildWeekdayDateRangesFromPeriods(array $periodos): array
+    {
+        $datas = [];
+
+        foreach ($periodos as $index => $periodo) {
+            $dataInicioRaw = $periodo['data_inicio'] ?? null;
+            $dataFimRaw = $periodo['data_fim'] ?? null;
+            $numeroPeriodo = $index + 1;
+
+            if (!$dataInicioRaw || !$dataFimRaw) {
+                throw new \InvalidArgumentException("Preencha a data de início e a data de fim no período {$numeroPeriodo}.");
+            }
+
+            try {
+                $dataInicio = Carbon::parse($dataInicioRaw);
+                $dataFim = Carbon::parse($dataFimRaw);
+            } catch (\Exception $e) {
+                throw new \InvalidArgumentException("O período {$numeroPeriodo} contém datas inválidas.");
+            }
+
+            if ($dataFim->lt($dataInicio)) {
+                throw new \InvalidArgumentException("No período {$numeroPeriodo}, a data de fim deve ser igual ou posterior à data de início.");
+            }
+
+            $datas = array_merge($datas, $this->buildWeekdayDateRange($dataInicio, $dataFim));
+        }
+
+        $datas = array_values(array_unique($datas));
+        sort($datas);
+
+        return $datas;
+    }
     public function show($id)
     {
         $reserva = Reserva::with(['lugar', 'utilizador', 'validadaPor'])
@@ -449,59 +607,137 @@ class ReservaController extends Controller
         return redirect('/reservas/' . $reserva->id)->with('success', 'Reserva atualizada com sucesso.');
     }
 
-    public function delete($id)
+    public function adminCancel($id)
     {
         $admin = auth('utilizador')->user();
         if ($admin->role !== 'ADMIN') {
-            abort(403, 'Apenas administradores podem apagar reservas.');
+            abort(403, 'Apenas administradores podem cancelar reservas de outros utilizadores.');
         }
 
         $reserva = Reserva::with(['lugar', 'utilizador'])->findOrFail($id);
 
+        if ($reserva->estado !== 'ATIVA') {
+            return back()->with('error', 'Apenas reservas ativas podem ser canceladas.');
+        }
+
+        $isReservaColab = ($reserva->modo_reserva ?? 'COLAB') === 'COLAB';
+
         DB::transaction(function () use ($reserva, $admin) {
-            MovimentoPontos::where('reserva_id', $reserva->id)->delete();
+            $reserva->update(['estado' => 'CANCELADA']);
+
+            if (($reserva->modo_reserva ?? 'COLAB') === 'COLAB') {
+                $reserva->utilizador->increment('pontos', 3);
+                MovimentoPontos::create([
+                    'utilizador_id' => $reserva->utilizador_id,
+                    'reserva_id' => $reserva->id,
+                    'tipo' => 'AJUSTE',
+                    'pontos' => 3,
+                ]);
+            }
 
             HistoricoEventos::create([
                 'utilizador_id' => $reserva->utilizador_id,
                 'tipo_evento' => 'RESERVA',
                 'entidade_id' => $reserva->id,
-                'acao' => 'REMOVIDO',
-                'descricao' => "Admin {$admin->nome} apagou reserva #{$reserva->id}",
+                'acao' => 'CANCELADO',
+                'descricao' => "Admin {$admin->nome} cancelou reserva #{$reserva->id} (lugar {$reserva->lugar->numero})",
             ]);
-
-            $reserva->delete();
         });
 
-        return redirect('/reservas')->with('success', 'Reserva apagada com sucesso.');
+        $mensagem = $isReservaColab
+            ? 'Reserva cancelada com sucesso. Foram devolvidos 3 pontos ao utilizador.'
+            : 'Reserva cancelada com sucesso.';
+
+        return redirect('/reservas')->with('success', $mensagem);
     }
 
     // API para AJAX - Buscar lugares disponíveis
     public function getDisponibilidade(Request $request)
     {
-        $data = $request->input('data');
         $user = auth('utilizador')->user();
         $modoPedido = strtoupper((string) $request->input('modo_reserva', $request->input('modo', 'COLAB')));
         $isAdminMode = $user && $user->role === 'ADMIN' && $modoPedido === 'ADMIN';
+        $tipoPeriodo = strtoupper((string) $request->input('tipo_periodo', 'UNICO'));
+        $datasConsulta = [];
+        $data = $request->input('data');
 
-        if (!$data) {
-            return response()->json(['message' => 'Data é obrigatória.'], 422);
-        }
+        if ($isAdminMode && $tipoPeriodo === 'INTERVALO') {
+            $periodosInput = $request->input('periodos', []);
 
-        try {
-            $dataCarbon = Carbon::parse($data);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Data inválida.'], 422);
-        }
+            if (empty($periodosInput)) {
+                $dataInicio = $request->input('data_inicio');
+                $dataFim = $request->input('data_fim');
+                if ($dataInicio && $dataFim) {
+                    $periodosInput[] = [
+                        'data_inicio' => $dataInicio,
+                        'data_fim' => $dataFim,
+                    ];
+                }
+            }
 
-        if ($dataCarbon->isWeekend()) {
+            if (empty($periodosInput)) {
+                return response()->json(['message' => 'Pelo menos um período com início e fim é obrigatório.'], 422);
+            }
+
+            try {
+                $datasConsulta = $this->buildWeekdayDateRangesFromPeriods($periodosInput);
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            if (empty($datasConsulta)) {
+                return response()->json([
+                    'bloqueado' => true,
+                    'mensagem' => 'Os períodos selecionados não contêm dias úteis reserváveis.',
+                ]);
+            }
+
+            $dias = collect($datasConsulta)
+                ->map(function ($dataConsulta) {
+                    return [
+                        'data' => $dataConsulta,
+                        'lugares' => $this->getLugaresDisponibilidadePorData($dataConsulta),
+                    ];
+                })
+                ->values();
+
             return response()->json([
                 'bloqueado' => false,
-                'lugares' => [],
+                'dias' => $dias,
             ]);
+        } else {
+            if (!$data) {
+                return response()->json(['message' => 'Data é obrigatória.'], 422);
+            }
+
+            try {
+                $dataCarbon = Carbon::parse($data);
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Data inválida.'], 422);
+            }
+
+            if ($dataCarbon->isWeekend()) {
+                return response()->json([
+                    'bloqueado' => false,
+                    'lugares' => [],
+                ]);
+            }
+
+            $datasConsulta = [$dataCarbon->toDateString()];
+            $data = $dataCarbon->toDateString();
         }
 
         // Colaborador: só pode ter uma reserva por dia (bloqueia seleção de lugares)
         if (!$isAdminMode && $user) {
+            $dataCarbon = Carbon::parse($data);
+            $mensagemRegraData = $this->validateColabReservationDate($dataCarbon);
+            if ($mensagemRegraData !== null) {
+                return response()->json([
+                    'bloqueado' => true,
+                    'mensagem' => $mensagemRegraData,
+                ]);
+            }
+
             $reservaDoDia = Reserva::where('utilizador_id', $user->id)
                 ->where('data', $data)
                 ->whereIn('estado', ['ATIVA', 'PRESENTE'])
@@ -523,9 +759,19 @@ class ReservaController extends Controller
             }
         }
 
-        $lugares = Lugar::where('ativo', true)
+        $lugares = $this->getLugaresDisponibilidadePorData($datasConsulta[0]);
+
+        return response()->json([
+            'bloqueado' => false,
+            'lugares' => $lugares,
+        ]);
+    }
+
+    private function getLugaresDisponibilidadePorData(string $data): \Illuminate\Support\Collection
+    {
+        return Lugar::where('ativo', true)
             ->get()
-            ->map(function($lugar) use ($data) {
+            ->map(function ($lugar) use ($data) {
                 $isFixo = in_array((int) $lugar->numero, self::LUGARES_FIXOS, true);
                 $reservaOcupante = Reserva::where('lugar_id', $lugar->id)
                     ->where('data', $data)
@@ -545,11 +791,26 @@ class ReservaController extends Controller
                     'ocupado_por_admin' => $ocupadoPorAdmin,
                 ];
             });
+    }
 
-        return response()->json([
-            'bloqueado' => false,
-            'lugares' => $lugares,
-        ]);
+    private function validateColabReservationDate(Carbon $dataReserva): ?string
+    {
+        $hoje = now();
+        $fimSemanaSeguinte = $hoje->copy()->addWeek()->endOfWeek(Carbon::FRIDAY);
+
+        if ($dataReserva->lt($hoje->copy()->startOfDay())) {
+            return 'Não pode reservar para datas passadas.';
+        }
+
+        if ($dataReserva->isToday() && $hoje->gt($hoje->copy()->setTime(10, 0))) {
+            return 'Para hoje, a reserva só pode ser feita até às 10:00.';
+        }
+
+        if ($dataReserva->gt($fimSemanaSeguinte->copy()->startOfDay())) {
+            return 'Pode reservar apenas para o resto desta semana e para a semana seguinte.';
+        }
+
+        return null;
     }
 
 }

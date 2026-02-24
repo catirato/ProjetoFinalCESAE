@@ -7,6 +7,16 @@
     @php
         $isAdmin = auth('utilizador')->user()->role === 'ADMIN';
         $modoReservaOld = old('modo_reserva', '');
+        $tipoPeriodoOld = old('tipo_periodo', 'UNICO');
+        $colabMinDate = \Carbon\Carbon::today()->format('Y-m-d');
+        $colabMaxDate = \Carbon\Carbon::today()->addWeek()->endOfWeek(\Carbon\Carbon::FRIDAY)->format('Y-m-d');
+        $periodosOld = old('periodos');
+        if (!is_array($periodosOld) || empty($periodosOld)) {
+            $periodosOld = [[
+                'data_inicio' => old('data_inicio', ''),
+                'data_fim' => old('data_fim', ''),
+            ]];
+        }
     @endphp
 
     <!-- Header -->
@@ -95,29 +105,102 @@
                     </div>
                 </div>
             </div>
+
+            <div id="periodo-section" class="bg-white rounded-xl shadow-lg p-6 {{ $modoReservaOld === 'ADMIN' ? '' : 'hidden' }}">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">3. Período da Reserva</h2>
+                <p class="text-sm text-gray-600 mb-4">Pretende reservar para um único dia ou para vários dias?</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="tipo_periodo" value="UNICO" class="mr-2" {{ $tipoPeriodoOld === 'UNICO' ? 'checked' : '' }}>
+                        <span class="font-semibold text-gray-900">1 dia</span>
+                    </label>
+                    <label class="border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="tipo_periodo" value="INTERVALO" class="mr-2" {{ $tipoPeriodoOld === 'INTERVALO' ? 'checked' : '' }}>
+                        <span class="font-semibold text-gray-900">Vários dias</span>
+                    </label>
+                </div>
+            </div>
         @endif
 
         <!-- Data Selection -->
         <div class="bg-white rounded-xl shadow-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">{{ $isAdmin ? '3' : '1' }}. Escolha a Data</h2>
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Escolha a Data</h2>
 
-            <div>
+            <div id="single-date-fields">
                 <label for="data" class="block text-sm font-medium text-gray-700 mb-2">
                     Data da Reserva
                 </label>
                 <input type="date"
                        id="data"
                        name="data"
-                       required
                        value="{{ old('data') }}"
-                       min="{{ $modoReservaOld === 'ADMIN' ? '' : date('Y-m-d') }}"
-                       max="{{ $modoReservaOld === 'ADMIN' ? '' : date('Y-m-d', strtotime('+30 days')) }}"
+                       min="{{ $modoReservaOld === 'ADMIN' ? '' : $colabMinDate }}"
+                       max="{{ $modoReservaOld === 'ADMIN' ? '' : $colabMaxDate }}"
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                        onchange="checkAvailability()">
-                <p id="weekend-error" class="text-sm text-red-600 mt-2 hidden">
-                    Sábado e domingo estão indisponíveis para reserva.
-                </p>
             </div>
+
+            @if($isAdmin)
+                <div id="range-date-fields" class="{{ $tipoPeriodoOld === 'INTERVALO' && $modoReservaOld === 'ADMIN' ? '' : 'hidden' }}">
+                    <div id="periodos-container" class="space-y-4">
+                        @foreach($periodosOld as $index => $periodoOld)
+                            <div class="periodo-row grid grid-cols-1 md:grid-cols-11 gap-3 items-end" data-index="{{ $index }}">
+                                <div class="md:col-span-5">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Data de Início
+                                    </label>
+                                    <input type="date"
+                                           name="periodos[{{ $index }}][data_inicio]"
+                                           value="{{ $periodoOld['data_inicio'] ?? '' }}"
+                                           class="periodo-start-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           onchange="checkAvailability()">
+                                </div>
+                                <div class="md:col-span-5">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Data de Fim
+                                    </label>
+                                    <input type="date"
+                                           name="periodos[{{ $index }}][data_fim]"
+                                           value="{{ $periodoOld['data_fim'] ?? '' }}"
+                                           class="periodo-end-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           onchange="checkAvailability()">
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button type="button"
+                                            onclick="removePeriodoRow(this)"
+                                            class="remove-periodo-btn w-full h-[50px] border border-red-300 text-red-700 rounded-lg hover:bg-red-50 {{ count($periodosOld) > 1 ? '' : 'hidden' }}">
+                                        -
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-3">
+                        <button type="button"
+                                id="add-periodo-btn"
+                                onclick="addPeriodoRow()"
+                                class="inline-flex items-center justify-center w-10 h-10 border border-blue-300 text-blue-700 rounded-full hover:bg-blue-50 text-2xl leading-none">
+                            +
+                        </button>
+                        <span class="text-sm text-gray-600 ml-2">Adicionar outro período</span>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            Só serão considerados dias úteis (segunda a sexta).
+                        </p>
+                    </div>
+                    <div>
+                        <p id="periodo-error" class="text-sm text-red-600 mt-2 hidden">
+                            Complete início e fim em todos os períodos.
+                        </p>
+                    </div>
+                </div>
+            @endif
+
+            <p id="weekend-error" class="text-sm text-red-600 mt-2 hidden">
+                Sábado e domingo estão indisponíveis para reserva.
+            </p>
         </div>
 
         <!-- Available Places -->
@@ -171,9 +254,13 @@
 <script>
 let selectedPlace = null;
 let selectedPlaces = new Set();
+let selectedPlacesByDay = {};
+let intervalDates = [];
+let periodRowCounter = 0;
 const isAdmin = @json($isAdmin);
 const oldLugarId = @json(old('lugar_id'));
 const oldLugarIds = @json(old('lugar_ids', []));
+const oldLugaresPorDia = @json(old('lugares_por_dia', []));
 
 function isWeekend(dateString) {
     const selectedDate = new Date(dateString + 'T00:00:00');
@@ -187,22 +274,46 @@ function getModoReserva() {
     return selected ? selected.value : '';
 }
 
+function getTipoPeriodo() {
+    if (!isAdmin) return 'UNICO';
+    const selected = document.querySelector('input[name="tipo_periodo"]:checked');
+    return selected ? selected.value : 'UNICO';
+}
+
 function updateFormByMode() {
     const modo = getModoReserva();
+    const tipoPeriodo = getTipoPeriodo();
     const dataInput = document.getElementById('data');
+    const singleDateFields = document.getElementById('single-date-fields');
+    const rangeDateFields = document.getElementById('range-date-fields');
+    const periodoSection = document.getElementById('periodo-section');
     const justificacaoSection = document.getElementById('justificacao-section');
     const costInfo = document.getElementById('cost-info');
     const pointsCard = document.getElementById('points-card');
+    const tipoPeriodoUnico = document.querySelector('input[name="tipo_periodo"][value="UNICO"]');
 
     if (modo === 'ADMIN') {
+        if (periodoSection) periodoSection.classList.remove('hidden');
+        if (singleDateFields) singleDateFields.classList.toggle('hidden', tipoPeriodo === 'INTERVALO');
+        if (rangeDateFields) rangeDateFields.classList.toggle('hidden', tipoPeriodo !== 'INTERVALO');
+
         dataInput.removeAttribute('min');
         dataInput.removeAttribute('max');
+        document.querySelectorAll('.periodo-start-input, .periodo-end-input').forEach((input) => {
+            input.removeAttribute('min');
+            input.removeAttribute('max');
+        });
         if (justificacaoSection) justificacaoSection.classList.remove('hidden');
         if (costInfo) costInfo.classList.add('hidden');
         if (pointsCard) pointsCard.classList.add('hidden');
     } else {
-        dataInput.setAttribute('min', "{{ date('Y-m-d') }}");
-        dataInput.setAttribute('max', "{{ date('Y-m-d', strtotime('+30 days')) }}");
+        if (periodoSection) periodoSection.classList.add('hidden');
+        if (tipoPeriodoUnico) tipoPeriodoUnico.checked = true;
+        if (singleDateFields) singleDateFields.classList.remove('hidden');
+        if (rangeDateFields) rangeDateFields.classList.add('hidden');
+
+        dataInput.setAttribute('min', "{{ $colabMinDate }}");
+        dataInput.setAttribute('max', "{{ $colabMaxDate }}");
         if (justificacaoSection) justificacaoSection.classList.add('hidden');
         if (costInfo) costInfo.classList.remove('hidden');
         if (pointsCard) pointsCard.classList.remove('hidden');
@@ -213,41 +324,87 @@ function updateFormByMode() {
 
 function checkAvailability() {
     const data = document.getElementById('data').value;
+    const intervalPeriods = getIntervalPeriods();
+    const completePeriods = intervalPeriods.filter((periodo) => periodo.data_inicio && periodo.data_fim);
+    const hasIncompletePeriods = intervalPeriods.some((periodo) => {
+        const hasStart = Boolean(periodo.data_inicio);
+        const hasEnd = Boolean(periodo.data_fim);
+        return hasStart !== hasEnd;
+    });
     const weekendError = document.getElementById('weekend-error');
+    const periodoError = document.getElementById('periodo-error');
     const submitButton = document.getElementById('submit-button');
     const placesSection = document.getElementById('places-section');
     const placesLoading = document.getElementById('places-loading');
     const placesContent = document.getElementById('places-content');
     const modo = getModoReserva();
+    const tipoPeriodo = getTipoPeriodo();
+    const isAdminInterval = isAdmin && modo === 'ADMIN' && tipoPeriodo === 'INTERVALO';
 
-    if (!data) {
+    if (!isAdminInterval && !data) {
         weekendError.classList.add('hidden');
+        if (periodoError) periodoError.classList.add('hidden');
+        submitButton.disabled = true;
+        placesSection.style.display = 'none';
         return;
     }
 
     if (isAdmin && !modo) {
         weekendError.classList.add('hidden');
+        if (periodoError) periodoError.classList.add('hidden');
         placesSection.style.display = 'none';
         return;
     }
 
     selectedPlace = null;
     selectedPlaces = new Set();
+    selectedPlacesByDay = {};
+    intervalDates = [];
     submitButton.disabled = true;
 
-    if (isWeekend(data)) {
+    if (!isAdminInterval && isWeekend(data)) {
         weekendError.classList.remove('hidden');
+        if (periodoError) periodoError.classList.add('hidden');
+        placesSection.style.display = 'none';
+        return;
+    }
+
+    if (isAdminInterval && completePeriods.length === 0) {
+        weekendError.classList.add('hidden');
+        if (periodoError) periodoError.classList.add('hidden');
+        placesSection.style.display = 'none';
+        return;
+    }
+
+    if (isAdminInterval && hasIncompletePeriods) {
+        weekendError.classList.add('hidden');
+        if (periodoError) periodoError.classList.remove('hidden');
+        submitButton.disabled = true;
         placesSection.style.display = 'none';
         return;
     }
 
     weekendError.classList.add('hidden');
+    if (periodoError) periodoError.classList.add('hidden');
 
     placesSection.style.display = 'block';
     placesLoading.style.display = 'block';
     placesContent.style.display = 'none';
 
-    fetch(`/api/lugares/disponiveis?data=${encodeURIComponent(data)}&modo=${encodeURIComponent(modo)}&modo_reserva=${encodeURIComponent(modo)}`)
+    const query = new URLSearchParams();
+    query.set('modo', modo);
+    query.set('modo_reserva', modo);
+    query.set('tipo_periodo', isAdminInterval ? 'INTERVALO' : 'UNICO');
+    if (isAdminInterval) {
+        completePeriods.forEach((periodo, index) => {
+            query.set(`periodos[${index}][data_inicio]`, periodo.data_inicio);
+            query.set(`periodos[${index}][data_fim]`, periodo.data_fim);
+        });
+    } else {
+        query.set('data', data);
+    }
+
+    fetch(`/api/lugares/disponiveis?${query.toString()}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Falha ao obter disponibilidade.');
@@ -267,6 +424,11 @@ function checkAvailability() {
                     </div>
                 `;
                 submitButton.disabled = true;
+                return;
+            }
+
+            if (isAdminInterval) {
+                loadPlacesByDay(payload?.dias ?? []);
                 return;
             }
 
@@ -371,6 +533,133 @@ function loadPlaces(places) {
     }
 }
 
+function loadPlacesByDay(days) {
+    const placesContent = document.getElementById('places-content');
+    document.getElementById('places-loading').style.display = 'none';
+    placesContent.style.display = 'block';
+
+    if (!Array.isArray(days) || days.length === 0) {
+        intervalDates = [];
+        placesContent.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Sem dias úteis no intervalo</h3>
+                <p class="text-gray-600">Escolha um intervalo com pelo menos um dia útil.</p>
+            </div>
+        `;
+        document.getElementById('submit-button').disabled = true;
+        return;
+    }
+    intervalDates = days.map((day) => day.data);
+
+    let html = '<div class="space-y-6">';
+    days.forEach((day) => {
+        const date = day.data;
+        const safeDateId = date.replace(/[^0-9]/g, '');
+        const places = Array.isArray(day.lugares) ? day.lugares : [];
+
+        html += `
+            <div class="border border-gray-200 rounded-xl p-4">
+                <h3 class="text-lg font-bold text-gray-900 mb-3">${new Date(date + 'T00:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        `;
+
+        places.forEach((place) => {
+            if (place.disponivel) {
+                html += `
+                    <button type="button"
+                            onclick="selectPlaceByDay('${date}', ${place.id})"
+                            id="place-${safeDateId}-${place.id}"
+                            class="place-button-day p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                        <div class="text-2xl font-bold text-gray-700">🅿️</div>
+                        <div class="text-lg font-bold text-gray-900 mt-1">Lugar ${place.numero}</div>
+                        <div class="text-xs text-green-600 font-medium mt-1">✓ Disponível</div>
+                    </button>
+                `;
+            } else {
+                const isFixo = place.motivo === 'fixo';
+                html += `
+                    <div class="p-4 border-2 border-gray-200 rounded-lg bg-gray-100 text-center opacity-50 cursor-not-allowed">
+                        <div class="text-2xl font-bold text-gray-400">🅿️</div>
+                        <div class="text-lg font-bold text-gray-500 mt-1">Lugar ${place.numero}</div>
+                        <div class="text-xs text-red-600 font-medium mt-1">${isFixo ? 'Indisponível (fixo)' : 'Ocupado'}</div>
+                    </div>
+                `;
+            }
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    html += '<div id="selected-places-by-day-inputs"></div>';
+    html += '<input type="hidden" name="lugar_id" id="lugar_id">';
+    html += '<div id="selected-places-inputs"></div>';
+    html += '<p class="text-sm text-gray-600 mt-4">Pode selecionar os lugares que quiser em cada dia útil.</p>';
+
+    placesContent.innerHTML = html;
+
+    Object.keys(oldLugaresPorDia || {}).forEach((data) => {
+        const ids = Array.isArray(oldLugaresPorDia[data]) ? oldLugaresPorDia[data] : [];
+        ids.forEach((id) => {
+            const btnId = `place-${data.replace(/[^0-9]/g, '')}-${id}`;
+            if (document.getElementById(btnId)) {
+                selectPlaceByDay(data, Number(id));
+            }
+        });
+    });
+
+    refreshHiddenPlacesByDayInputs();
+}
+
+function selectPlaceByDay(date, placeId) {
+    if (!selectedPlacesByDay[date]) {
+        selectedPlacesByDay[date] = new Set();
+    }
+
+    const set = selectedPlacesByDay[date];
+    const btnId = `place-${date.replace(/[^0-9]/g, '')}-${placeId}`;
+    const clickedButton = document.getElementById(btnId);
+    if (!clickedButton) return;
+
+    if (set.has(placeId)) {
+        set.delete(placeId);
+        clickedButton.classList.remove('border-blue-600', 'bg-blue-50');
+        clickedButton.classList.add('border-gray-300');
+    } else {
+        set.add(placeId);
+        clickedButton.classList.remove('border-gray-300');
+        clickedButton.classList.add('border-blue-600', 'bg-blue-50');
+    }
+
+    if (set.size === 0) {
+        delete selectedPlacesByDay[date];
+    }
+
+    refreshHiddenPlacesByDayInputs();
+}
+
+function refreshHiddenPlacesByDayInputs() {
+    const wrapper = document.getElementById('selected-places-by-day-inputs');
+    if (!wrapper) return;
+
+    wrapper.innerHTML = '';
+    Object.keys(selectedPlacesByDay).forEach((date) => {
+        Array.from(selectedPlacesByDay[date]).forEach((placeId) => {
+            wrapper.insertAdjacentHTML(
+                'beforeend',
+                `<input type="hidden" name="lugares_por_dia[${date}][]" value="${placeId}">`
+            );
+        });
+    });
+
+    const allDaysCovered = intervalDates.length > 0
+        && intervalDates.every((date) => selectedPlacesByDay[date] && selectedPlacesByDay[date].size > 0);
+    document.getElementById('submit-button').disabled = !allDaysCovered;
+}
+
 function selectPlace(id) {
     const modo = getModoReserva();
     const hiddenSingle = document.getElementById('lugar_id');
@@ -426,13 +715,88 @@ function selectPlace(id) {
     document.getElementById('submit-button').disabled = false;
 }
 
+function getIntervalPeriods() {
+    return Array.from(document.querySelectorAll('.periodo-row')).map((row) => {
+        const startInput = row.querySelector('.periodo-start-input');
+        const endInput = row.querySelector('.periodo-end-input');
+        return {
+            data_inicio: startInput ? startInput.value : '',
+            data_fim: endInput ? endInput.value : '',
+        };
+    });
+}
+
+function updatePeriodoRemoveButtons() {
+    const removeButtons = document.querySelectorAll('.remove-periodo-btn');
+    const showRemove = removeButtons.length > 1;
+    removeButtons.forEach((btn) => {
+        btn.classList.toggle('hidden', !showRemove);
+    });
+}
+
+function addPeriodoRow() {
+    const container = document.getElementById('periodos-container');
+    if (!container) return;
+
+    const nextIndex = periodRowCounter++;
+    container.insertAdjacentHTML('beforeend', `
+        <div class="periodo-row grid grid-cols-1 md:grid-cols-11 gap-3 items-end" data-index="${nextIndex}">
+            <div class="md:col-span-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Início
+                </label>
+                <input type="date"
+                       name="periodos[${nextIndex}][data_inicio]"
+                       class="periodo-start-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       onchange="checkAvailability()">
+            </div>
+            <div class="md:col-span-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Fim
+                </label>
+                <input type="date"
+                       name="periodos[${nextIndex}][data_fim]"
+                       class="periodo-end-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       onchange="checkAvailability()">
+            </div>
+            <div class="md:col-span-1">
+                <button type="button"
+                        onclick="removePeriodoRow(this)"
+                        class="remove-periodo-btn w-full h-[50px] border border-red-300 text-red-700 rounded-lg hover:bg-red-50">
+                    -
+                </button>
+            </div>
+        </div>
+    `);
+
+    updatePeriodoRemoveButtons();
+    checkAvailability();
+}
+
+function removePeriodoRow(button) {
+    const row = button.closest('.periodo-row');
+    if (!row) return;
+    row.remove();
+    updatePeriodoRemoveButtons();
+    checkAvailability();
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     if (isAdmin) {
         document.querySelectorAll('input[name="modo_reserva"]').forEach(input => {
             input.addEventListener('change', updateFormByMode);
         });
+        document.querySelectorAll('input[name="tipo_periodo"]').forEach(input => {
+            input.addEventListener('change', updateFormByMode);
+        });
     }
 
+    const existingIndexes = Array.from(document.querySelectorAll('.periodo-row'))
+        .map((row) => Number(row.dataset.index))
+        .filter((value) => Number.isFinite(value));
+    periodRowCounter = existingIndexes.length > 0 ? (Math.max(...existingIndexes) + 1) : 1;
+
+    updatePeriodoRemoveButtons();
     updateFormByMode();
 });
 </script>
