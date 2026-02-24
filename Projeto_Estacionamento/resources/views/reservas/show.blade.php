@@ -190,15 +190,17 @@
                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
                                 Editar Reserva
                             </a>
-                            <form action="{{ route('admin.reservas.delete', $reserva->id) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        onclick="return confirm('Tem certeza que deseja apagar esta reserva? Esta ação é definitiva.')"
-                                        class="px-4 py-2 bg-red-700 text-white rounded-lg font-semibold hover:bg-red-800 transition">
-                                    Apagar Reserva
-                                </button>
-                            </form>
+                            @if($reserva->estado === 'ATIVA')
+                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                            class="px-4 py-2 bg-red-700 text-white rounded-lg font-semibold hover:bg-red-800 transition">
+                                        Cancelar Reserva
+                                    </button>
+                                </form>
+                            @endif
                         @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
                             <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
                                 @csrf

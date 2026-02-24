@@ -104,7 +104,7 @@ Route::middleware(['auth:utilizador'])->group(function () {
         // Gestão global de reservas (apenas admin)
         Route::get('/admin/reservas/{id}/editar', [ReservaController::class, 'edit'])->name('admin.reservas.edit');
         Route::put('/admin/reservas/{id}', [ReservaController::class, 'update'])->name('admin.reservas.update');
-        Route::delete('/admin/reservas/{id}/apagar', [ReservaController::class, 'delete'])->name('admin.reservas.delete');
+        Route::delete('/admin/reservas/{id}/cancelar', [ReservaController::class, 'adminCancel'])->name('admin.reservas.cancel');
 
         Route::get('/admin/relatorios', [ReportController::class, 'index'])->name('admin.relatorios.index');
         Route::get('/admin/relatorios/{id}/editar', [ReportController::class, 'edit'])->name('admin.relatorios.edit');

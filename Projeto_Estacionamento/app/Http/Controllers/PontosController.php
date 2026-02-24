@@ -35,6 +35,13 @@ class PontosController extends Controller
             abort(403, 'Apenas administradores podem gerir pontos.');
         }
 
+        $filtroNome = trim((string) request('filtro_nome', ''));
+        $filtroFuncao = strtoupper(trim((string) request('filtro_funcao', '')));
+        $funcoesValidas = ['ADMIN', 'SEGURANCA', 'COLAB'];
+        if (!in_array($filtroFuncao, $funcoesValidas, true)) {
+            $filtroFuncao = '';
+        }
+
         $reportEmAjuste = null;
         $reportId = (int) request('report_id', 0);
         if ($reportId > 0) {
@@ -46,13 +53,20 @@ class PontosController extends Controller
 
         $utilizadores = Utilizador::query()
             ->where('role', '!=', 'SEGURANCA')
+            ->when($filtroNome !== '', function ($query) use ($filtroNome) {
+                $query->where('nome', 'like', '%' . $filtroNome . '%');
+            })
+            ->when($filtroFuncao !== '', function ($query) use ($filtroFuncao) {
+                $query->where('role', $filtroFuncao);
+            })
             ->when($reportEmAjuste, function ($query) use ($reportEmAjuste) {
                 $query->where('id', $reportEmAjuste->utilizador_id);
             })
             ->orderBy('nome')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('pontos.admin', compact('utilizadores', 'reportEmAjuste'));
+        return view('pontos.admin', compact('utilizadores', 'reportEmAjuste', 'filtroNome', 'filtroFuncao'));
     }
 
     public function adminAdjust(Request $request, $id)
