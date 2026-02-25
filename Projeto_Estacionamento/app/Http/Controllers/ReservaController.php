@@ -187,7 +187,7 @@ class ReservaController extends Controller
             $validationRules['lugar_ids.*'] = 'integer|exists:lugar,id|distinct';
             $validationRules['lugares_por_dia'] = 'nullable|array';
             $validationRules['lugares_por_dia.*'] = 'nullable|array|min:1';
-            $validationRules['lugares_por_dia.*.*'] = 'integer|exists:lugar,id|distinct';
+            $validationRules['lugares_por_dia.*.*'] = 'integer|exists:lugar,id';
         } else {
             $validationRules['data'] = 'required|date';
             $validationRules['lugar_id'] = 'required|exists:lugar,id';
