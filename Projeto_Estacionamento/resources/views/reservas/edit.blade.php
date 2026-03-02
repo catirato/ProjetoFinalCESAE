@@ -11,7 +11,7 @@
             </svg>
             Voltar aos detalhes
         </a>
-        <h1 class="text-3xl font-bold text-gray-900">Editar Reserva #{{ $reserva->id }}</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Editar Reserva #{{ $reserva->id }}</h1>
         <p class="text-gray-600 mt-1">Gestão administrativa de reservas</p>
     </div>
 
@@ -80,13 +80,13 @@
                 </select>
             </div>
 
-            <div class="flex justify-end gap-3">
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <a href="{{ url('/reservas/' . $reserva->id) }}"
-                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-center w-full sm:w-auto">
                     Cancelar
                 </a>
                 <button type="submit"
-                        class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto">
                     Guardar Alterações
                 </button>
             </div>
@@ -94,4 +94,3 @@
     </div>
 </div>
 @endsection
-

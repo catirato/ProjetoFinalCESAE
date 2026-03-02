@@ -4,7 +4,7 @@
 
 <div class="hero min-h-[calc(100vh-16rem)]">
     <div class="hero-content flex-col">
-        <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card w-full max-w-md bg-base-100 shadow-xl">
             <div class="card-body text-center">
                 
                 <h1 class="text-3xl font-bold mb-4">Tem certeza?</h1>

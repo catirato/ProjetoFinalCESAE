@@ -13,7 +13,7 @@
             </svg>
             Voltar às reservas
         </a>
-        <h1 class="text-3xl font-bold text-gray-900">Detalhes da Reserva</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Detalhes da Reserva</h1>
     </div>
 
     <!-- Main Card -->
@@ -28,16 +28,16 @@
             @endif
             @if($reserva->estado === 'ATIVA')
                 <div class="bg-blue-600 text-white px-6 py-4">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div class="flex items-center">
-                            <div class="text-3xl mr-4">✓</div>
+                            <div class="text-3xl mr-3 sm:mr-4 shrink-0">✓</div>
                             <div>
                                 <p class="font-bold text-lg">Reserva Ativa</p>
                                 <p class="text-blue-100 text-sm">Sua vaga está garantida</p>
                             </div>
                         </div>
                         @if(\Carbon\Carbon::parse($reserva->data)->isToday())
-                            <span class="px-4 py-2 bg-yellow-400 text-yellow-900 rounded-full font-bold">
+                            <span class="px-4 py-2 bg-yellow-400 text-yellow-900 rounded-full font-bold self-start sm:self-auto">
                                 🔥 HOJE!
                             </span>
                         @endif
@@ -46,7 +46,7 @@
             @elseif($reserva->estado === 'PRESENTE')
                 <div class="bg-green-600 text-white px-6 py-4">
                     <div class="flex items-center">
-                        <div class="text-3xl mr-4">✓</div>
+                        <div class="text-3xl mr-3 sm:mr-4 shrink-0">✓</div>
                         <div>
                             <p class="font-bold text-lg">Presença Confirmada</p>
                             <p class="text-green-100 text-sm">Utilizou o estacionamento</p>
@@ -56,7 +56,7 @@
             @elseif($reserva->estado === 'NAO_COMPARECEU')
                 <div class="bg-red-600 text-white px-6 py-4">
                     <div class="flex items-center">
-                        <div class="text-3xl mr-4">✗</div>
+                        <div class="text-3xl mr-3 sm:mr-4 shrink-0">✗</div>
                         <div>
                             <p class="font-bold text-lg">Não Compareceu</p>
                             <p class="text-red-100 text-sm">Falta não justificada - Penalização aplicada</p>
@@ -66,7 +66,7 @@
             @elseif($reserva->estado === 'CANCELADA')
                 <div class="bg-gray-600 text-white px-6 py-4">
                     <div class="flex items-center">
-                        <div class="text-3xl mr-4">⊘</div>
+                        <div class="text-3xl mr-3 sm:mr-4 shrink-0">⊘</div>
                         <div>
                             <p class="font-bold text-lg">Reserva Cancelada</p>
                             <p class="text-gray-100 text-sm">Esta reserva foi cancelada</p>
@@ -226,7 +226,7 @@
         @if(isset($movimentosPontos) && $movimentosPontos->count() > 0)
             <div class="space-y-3">
                 @foreach($movimentosPontos as $movimento)
-                    <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-200 pb-3">
                         <div>
                             <p class="font-medium text-gray-900">
                                 @if($movimento->tipo === 'RESERVA')
@@ -241,11 +241,11 @@
                                 {{ \Carbon\Carbon::parse($movimento->created_at)->format('d/m/Y H:i') }}
                             </p>
                         </div>
-                        <div class="text-right">
+                        <div class="text-left sm:text-right">
                             @if($movimento->pontos > 0)
-                                <span class="text-2xl font-bold text-green-600">+{{ $movimento->pontos }}</span>
+                                <span class="text-xl sm:text-2xl font-bold text-green-600">+{{ $movimento->pontos }}</span>
                             @else
-                                <span class="text-2xl font-bold text-red-600">{{ $movimento->pontos }}</span>
+                                <span class="text-xl sm:text-2xl font-bold text-red-600">{{ $movimento->pontos }}</span>
                             @endif
                             <p class="text-xs text-gray-500">pontos</p>
                         </div>
@@ -264,7 +264,7 @@
             <div class="text-center">
                 <div class="inline-block bg-gray-100 p-8 rounded-lg">
                     <!-- QR Code would go here - você pode gerar com uma biblioteca -->
-                    <div class="w-48 h-48 bg-white border-4 border-gray-300 flex items-center justify-center">
+                    <div class="w-36 h-36 sm:w-48 sm:h-48 bg-white border-4 border-gray-300 flex items-center justify-center">
                         <p class="text-4xl font-bold text-gray-400">QR</p>
                     </div>
                 </div>

@@ -9,7 +9,7 @@
         <p class="text-gray-600 mt-1">Reservas de hoje que ainda aguardam validação de chegada.</p>
     </div>
 
-    <div class="mb-6 flex gap-3">
+    <div class="mb-6 flex flex-wrap gap-3">
         <a href="{{ route('seguranca.reservas.hoje') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
             Todas de Hoje
         </a>
@@ -21,7 +21,7 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="bg-white rounded-xl shadow-lg overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

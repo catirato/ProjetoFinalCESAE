@@ -11,7 +11,7 @@
             </svg>
             Voltar ao Painel de Controlo
         </a>
-        <h1 class="text-3xl font-bold text-gray-900">Submissão de Relatório</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Submissão de Relatório</h1>
         <p class="text-gray-600 mt-1">Reporte ocorrências relacionadas com o estacionamento para análise do administrador.</p>
     </div>
 

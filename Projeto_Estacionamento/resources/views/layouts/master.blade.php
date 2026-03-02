@@ -19,43 +19,88 @@
 <body class="min-h-screen flex flex-col font-sans bg-base-200">
 
     <!-- Navbar -->
-    <nav class="navbar bg-base-100 shadow-md">
-        <div class="navbar-start">
-            <a href="{{ url('/') }}" class="btn btn-ghost text-xl font-bold">🚗 CESAE Estacionamento</a>
-        </div>
-        <div class="navbar-end gap-2">
-            @auth('utilizador')
-                @if(auth('utilizador')->user()->role === 'SEGURANCA')
-                    <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost btn-sm">Reservas de Hoje</a>
+    <nav class="bg-base-100 shadow-md" x-data="{ mobileMenuOpen: false }">
+        <div class="navbar px-4 md:px-6">
+            <div class="navbar-start">
+                <a href="{{ url('/') }}" class="btn btn-ghost text-base sm:text-lg md:text-xl font-bold">🚗 CESAE Estacionamento</a>
+            </div>
+
+            <div class="navbar-end hidden md:flex gap-2">
+                @auth('utilizador')
+                    @if(auth('utilizador')->user()->role === 'SEGURANCA')
+                        <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost btn-sm">Reservas de Hoje</a>
+                    @else
+                        <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
+                    @endif
                 @else
                     <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
-                @endif
-            @else
-                <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
-            @endauth
-            <a href="{{ route('regras.sistema') }}" class="btn btn-ghost btn-sm">Regras do Sistema</a>
-            @guest('utilizador')
-                <a href="{{ url('/login') }}" class="btn btn-primary btn-sm">Login</a>
-                {{-- <a href="{{ url('/register') }}" class="btn btn-outline btn-sm">Registar</a> --}}
-            @else
-                <div class="dropdown dropdown-end">
-                    <label tabindex="0" class="btn btn-ghost btn-sm gap-1">
-                        {{ auth('utilizador')->user()->nome }}
-                        <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <path d="M7 10l5 5 5-5H7z"/>
-                        </svg>
-                    </label>
-                    <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><a href="{{ url('/perfil') }}">Meu Perfil</a></li>
-                        <li>
-                            <form method="POST" action="{{ url('/logout') }}">
-                                @csrf
-                                <button type="submit" class="w-full text-left">Sair</button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            @endguest
+                @endauth
+
+                <a href="{{ route('regras.sistema') }}" class="btn btn-ghost btn-sm">Regras do Sistema</a>
+
+                @guest('utilizador')
+                    <a href="{{ url('/login') }}" class="btn btn-primary btn-sm">Login</a>
+                @else
+                    <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="btn btn-ghost btn-sm gap-1">
+                            {{ auth('utilizador')->user()->nome }}
+                            <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M7 10l5 5 5-5H7z"/>
+                            </svg>
+                        </label>
+                        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                            <li><a href="{{ url('/perfil') }}">Meu Perfil</a></li>
+                            <li>
+                                <form method="POST" action="{{ url('/logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left">Sair</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @endguest
+            </div>
+
+            <div class="navbar-end md:hidden">
+                <button type="button"
+                        class="btn btn-ghost btn-square"
+                        @click="mobileMenuOpen = !mobileMenuOpen"
+                        :aria-expanded="mobileMenuOpen.toString()"
+                        aria-label="Abrir menu">
+                    <svg x-show="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg x-show="mobileMenuOpen" x-cloak xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="mobileMenuOpen" x-cloak class="md:hidden border-t border-base-200 px-4 pb-4">
+            <div class="flex flex-col gap-2 pt-3">
+                @auth('utilizador')
+                    @if(auth('utilizador')->user()->role === 'SEGURANCA')
+                        <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost justify-start">Reservas de Hoje</a>
+                    @else
+                        <a href="{{ url('/dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
+                    @endif
+                    <a href="{{ url('/perfil') }}" class="btn btn-ghost justify-start">Meu Perfil</a>
+                @else
+                    <a href="{{ url('/dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
+                @endauth
+
+                <a href="{{ route('regras.sistema') }}" class="btn btn-ghost justify-start">Regras do Sistema</a>
+
+                @guest('utilizador')
+                    <a href="{{ url('/login') }}" class="btn btn-primary">Login</a>
+                @else
+                    <form method="POST" action="{{ url('/logout') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline w-full">Sair</button>
+                    </form>
+                @endguest
+            </div>
         </div>
     </nav>
 
