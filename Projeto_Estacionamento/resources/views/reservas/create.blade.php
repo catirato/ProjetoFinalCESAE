@@ -27,21 +27,21 @@
             </svg>
             Voltar ao Painel de Controlo
         </a>
-        <h1 class="text-3xl font-bold text-gray-900">Nova Reserva</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Nova Reserva</h1>
         <p class="text-gray-600 mt-1">Reserve uma vaga de estacionamento</p>
     </div>
 
     <!-- User Points Card -->
     <div id="points-card" class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center">
-                <div class="text-4xl mr-4">⭐</div>
+                <div class="text-4xl mr-3 sm:mr-4">⭐</div>
                 <div>
                     <p class="text-sm text-yellow-800 font-medium">Seus Pontos Disponíveis</p>
-                    <p class="text-3xl font-bold text-yellow-900">{{ auth('utilizador')->user()->pontos }}</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-yellow-900">{{ auth('utilizador')->user()->pontos }}</p>
                 </div>
             </div>
-            <a href="{{ url('/pontos') }}" class="text-yellow-700 hover:text-yellow-900 text-sm font-medium">
+            <a href="{{ url('/pontos') }}" class="text-yellow-700 hover:text-yellow-900 text-sm font-medium self-start sm:self-auto">
                 Ver histórico →
             </a>
         </div>
@@ -219,8 +219,8 @@
 
         <!-- Cost Information -->
         <div id="cost-info" class="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <div class="flex items-start">
-                <div class="text-3xl mr-4">💰</div>
+            <div class="flex items-start gap-3">
+                <div class="text-3xl shrink-0">💰</div>
                 <div>
                     <h3 class="font-bold text-blue-900 mb-2">Custo da Reserva</h3>
                     <p class="text-blue-800 mb-2">
@@ -235,15 +235,15 @@
         </div>
 
         <!-- Submit Button -->
-        <div class="flex justify-end space-x-4">
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
             <a href="{{ url('/reservas') }}"
-               class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">
+               class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition text-center w-full sm:w-auto">
                 Cancelar
             </a>
             <button type="submit"
                     id="submit-button"
                     disabled
-                    class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed w-full sm:w-auto">
                 Confirmar Reserva
             </button>
         </div>
@@ -479,7 +479,7 @@ function loadPlaces(places) {
         return;
     }
 
-    let html = '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+    let html = '<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">';
 
     places.forEach(place => {
         if (place.disponivel) {
@@ -561,7 +561,7 @@ function loadPlacesByDay(days) {
         html += `
             <div class="border border-gray-200 rounded-xl p-4">
                 <h3 class="text-lg font-bold text-gray-900 mb-3">${new Date(date + 'T00:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         `;
 
         places.forEach((place) => {

@@ -17,7 +17,7 @@
     @endphp
 
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Relatórios</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Relatórios</h1>
         <p class="text-gray-600 mt-1">Lista de relatórios submetidos.</p>
     </div>
 
@@ -43,20 +43,50 @@
                     <option value="SEGURANCA" {{ request('role', $role ?? '') === 'SEGURANCA' ? 'selected' : '' }}>SEGURANCA</option>
                 </select>
             </div>
-            <div class="flex gap-3">
+            <div class="flex flex-wrap gap-3">
                 <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition w-full sm:w-auto">
                     Filtrar
                 </button>
                 <a href="{{ route('admin.relatorios.index') }}"
-                   class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                   class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition w-full sm:w-auto text-center">
                     Limpar filtros
                 </a>
             </div>
         </form>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="md:hidden space-y-3 mb-4">
+        @forelse($reports as $report)
+            <article class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="text-sm font-semibold text-gray-900">{{ $report->tipo }}</p>
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                        {{ $report->estado }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600">{{ \Carbon\Carbon::parse($report->created_at)->format('d/m/Y H:i') }}</p>
+                <p class="text-sm text-gray-900">
+                    <span class="font-semibold">Utilizador:</span> {{ $report->utilizador->nome ?? 'N/A' }}
+                </p>
+                <p class="text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($report->descricao, 150) }}</p>
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <a href="{{ route('admin.relatorios.show', $report->id) }}"
+                       class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium">
+                        Ver
+                    </a>
+                    <a href="{{ route('admin.relatorios.edit', $report->id) }}"
+                       class="inline-flex items-center px-3 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
+                        Editar
+                    </a>
+                </div>
+            </article>
+        @empty
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">Sem reports.</div>
+        @endforelse
+    </div>
+
+    <div class="hidden md:block bg-white rounded-xl shadow-lg overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

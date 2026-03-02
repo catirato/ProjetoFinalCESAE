@@ -34,9 +34,9 @@
 
     
     <!-- Header -->
-    <div class="mb-8 flex justify-between items-center">
+    <div class="mb-8 flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
                 {{ auth('utilizador')->user()->role === 'ADMIN' ? 'Reservas de Todos os Utilizadores' : 'Minhas Reservas' }}
             </h1>
             <p class="text-gray-600 mt-1">
@@ -44,7 +44,7 @@
             </p>
         </div>
         <a href="{{ url('/reservas/criar') }}" 
-        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center">
+        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center md:justify-start w-full md:w-auto">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
@@ -55,15 +55,15 @@
     <!-- Tabs -->
     <div class="bg-white rounded-xl shadow-lg mb-6">
         <div class="border-b border-gray-200">
-            <nav class="flex -mb-px">
+            <nav class="flex -mb-px overflow-x-auto">
                 <button onclick="showTab('ativas')" 
                         id="tab-ativas"
-                        class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+                        class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-600 whitespace-nowrap">
                     Ativas ({{ $reservasAtivas->count() ?? 0 }})
                 </button>
                 <button onclick="showTab('historico')" 
                         id="tab-historico"
-                        class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
                     Histórico ({{ $reservasHistorico->count() ?? 0 }})
                 </button>
             </nav>
@@ -93,7 +93,7 @@
                         <option value="ADMIN" {{ ($filtroFuncao ?? request('filtro_funcao')) === 'ADMIN' ? 'selected' : '' }}>Administrador</option>
                     </select>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     <button type="submit"
                             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Filtrar
@@ -109,7 +109,88 @@
     
     <!-- Ativas Tab -->
     <div id="content-ativas" class="reservas-tab-content">
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="md:hidden space-y-3 mb-4">
+            @forelse($reservasAtivas ?? [] as $reserva)
+                <article class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold inline-block text-sm">
+                            Lugar {{ $reserva->lugar->numero ?? 'N/A' }}
+                        </div>
+                        @if(\Carbon\Carbon::parse($reserva->data)->isToday())
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                🔥 Hoje
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="text-sm text-gray-900">
+                        {{ \Carbon\Carbon::parse($reserva->data)->format('d/m/Y') }}
+                        ({{ \Carbon\Carbon::parse($reserva->data)->locale('pt')->isoFormat('dddd') }})
+                    </div>
+
+                    @if($isAdmin)
+                        <p class="text-sm text-gray-700">
+                            <span class="font-semibold">Utilizador:</span> {{ $reserva->utilizador->nome ?? 'N/A' }}
+                        </p>
+                    @endif
+
+                    <div class="flex flex-wrap gap-2">
+                        @if($reserva->estado === 'ATIVA')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                ✓ Reserva Ativa
+                            </span>
+                        @elseif($reserva->estado === 'PRESENTE')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                ✓ Presente
+                            </span>
+                        @endif
+
+                        @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-rose-100 text-rose-800">
+                                Reserva administrativa execional
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="pt-1 flex flex-wrap items-center gap-3 text-sm font-medium">
+                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                            Ver detalhes
+                        </a>
+
+                        @if($isAdmin)
+                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
+                                Editar
+                            </a>
+                            <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                        class="text-red-600 hover:text-red-800">
+                                    Cancelar
+                                </button>
+                            </form>
+                        @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+                            <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                        class="text-red-600 hover:text-red-800">
+                                    Cancelar
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </article>
+            @empty
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
+                    Sem reservas ativas.
+                </div>
+            @endforelse
+        </div>
+
+        <div class="hidden md:block bg-white rounded-xl shadow-lg overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -181,7 +262,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex items-center gap-3">
+                                    <div class="flex flex-wrap items-center gap-3">
                                         <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
                                             Ver detalhes
                                         </a>
@@ -228,7 +309,76 @@
     
     <!-- Histórico Tab -->
     <div id="content-historico" class="reservas-tab-content hidden">
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="md:hidden space-y-3 mb-4">
+            @forelse($reservasHistorico ?? [] as $reserva)
+                <article class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="bg-gray-100 text-gray-700 px-3 py-1 rounded font-bold inline-block text-sm">
+                            Lugar {{ $reserva->lugar->numero ?? 'N/A' }}
+                        </div>
+                        <div class="text-sm text-gray-900">
+                            {{ \Carbon\Carbon::parse($reserva->data)->format('d/m/Y') }}
+                        </div>
+                    </div>
+
+                    @if($isAdmin)
+                        <p class="text-sm text-gray-700">
+                            <span class="font-semibold">Utilizador:</span> {{ $reserva->utilizador->nome ?? 'N/A' }}
+                        </p>
+                    @endif
+
+                    <div class="flex flex-wrap gap-2">
+                        @if($reserva->estado === 'PRESENTE')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                ✓ Presente
+                            </span>
+                        @elseif($reserva->estado === 'NAO_COMPARECEU')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                ✗ Não compareceu
+                            </span>
+                        @elseif($reserva->estado === 'CANCELADA')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                ⊘ Cancelada
+                            </span>
+                        @endif
+
+                        @if(($reserva->modo_reserva ?? 'COLAB') === 'ADMIN')
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full bg-rose-100 text-rose-800">
+                                Reserva administrativa execional
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="pt-1 flex flex-wrap items-center gap-3 text-sm font-medium">
+                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                            Ver detalhes
+                        </a>
+                        @if($isAdmin)
+                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
+                                Editar
+                            </a>
+                            @if($reserva->estado === 'ATIVA')
+                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                            class="text-red-600 hover:text-red-800">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            @endif
+                        @endif
+                    </div>
+                </article>
+            @empty
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
+                    Sem histórico de reservas.
+                </div>
+            @endforelse
+        </div>
+
+        <div class="hidden md:block bg-white rounded-xl shadow-lg overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -299,7 +449,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex items-center gap-3">
+                                    <div class="flex flex-wrap items-center gap-3">
                                         <a href="{{ url('/reservas/' . $reserva->id) }}"
                                            class="text-blue-600 hover:text-blue-900">
                                             Ver detalhes
