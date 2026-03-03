@@ -51,10 +51,7 @@
                         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
                             <li><a href="{{ url('/perfil') }}">Meu Perfil</a></li>
                             <li>
-                                <form method="POST" action="{{ url('/logout') }}">
-                                    @csrf
-                                    <button type="submit" class="w-full text-left">Sair</button>
-                                </form>
+                                <button type="submit" form="logout-form" class="w-full text-left">Sair</button>
                             </li>
                         </ul>
                     </div>
@@ -95,14 +92,17 @@
                 @guest('utilizador')
                     <a href="{{ url('/login') }}" class="btn btn-primary">Login</a>
                 @else
-                    <form method="POST" action="{{ url('/logout') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-outline w-full">Sair</button>
-                    </form>
+                    <button type="submit" form="logout-form" class="btn btn-outline w-full">Sair</button>
                 @endguest
             </div>
         </div>
     </nav>
+
+    @auth('utilizador')
+        <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
+            @csrf
+        </form>
+    @endauth
 
     <!-- Alert Messages -->
     @if(session('success'))
