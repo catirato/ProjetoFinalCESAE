@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Report;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -88,6 +89,10 @@ class ReportController extends Controller
             'estado' => 'required|in:PENDENTE,VALIDADO,REJEITADO',
             'ajuste_pontos_necessario' => 'nullable|boolean',
             'ajuste_pontos_concluido' => 'nullable|boolean',
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'remove_fotos' => 'nullable|array',
+            'remove_fotos.*' => 'string',
         ]);
 
         $estado = $validated['estado'];
@@ -101,9 +106,22 @@ class ReportController extends Controller
             $ajusteConcluido = false;
         }
 
+        $existingFotos = array_values($report->fotos ?? []);
+        $removeFotos = array_values($validated['remove_fotos'] ?? []);
+        $fotosParaRemover = array_values(array_intersect($existingFotos, $removeFotos));
+
+        foreach ($fotosParaRemover as $fotoPath) {
+            Storage::disk('public')->delete($fotoPath);
+        }
+
+        $fotosRestantes = array_values(array_diff($existingFotos, $fotosParaRemover));
+        $novasFotos = $this->storeUploadedPhotos($request);
+        $fotosAtualizadas = array_values(array_unique(array_merge($fotosRestantes, $novasFotos)));
+
         $report->update([
             'tipo' => $validated['tipo'],
             'descricao' => $validated['descricao'],
+            'fotos' => !empty($fotosAtualizadas) ? $fotosAtualizadas : null,
             'estado' => $estado,
             'ajuste_pontos_necessario' => $ajusteNecessario,
             'ajuste_pontos_concluido' => $ajusteConcluido,
@@ -117,12 +135,17 @@ class ReportController extends Controller
         $validated = $request->validate([
             'tipo' => 'required|in:LUGAR_OCUPADO,SEM_RESERVA,PROBLEMA',
             'descricao' => 'required|string|max:2000',
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+
+        $uploadedPhotos = $this->storeUploadedPhotos($request);
 
         $report = Report::create([
             'utilizador_id' => auth('utilizador')->id(),
             'tipo' => $validated['tipo'],
             'descricao' => $validated['descricao'],
+            'fotos' => !empty($uploadedPhotos) ? $uploadedPhotos : null,
             'estado' => 'PENDENTE',
         ]);
 
@@ -174,5 +197,36 @@ class ReportController extends Controller
         $report->save();
 
         return back()->with('success', 'Relatório rejeitado.');
+    }
+
+    public function destroy($id)
+    {
+        $report = Report::findOrFail($id);
+
+        foreach ((array) ($report->fotos ?? []) as $fotoPath) {
+            Storage::disk('public')->delete($fotoPath);
+        }
+
+        $report->delete();
+
+        return redirect()
+            ->route('admin.relatorios.index')
+            ->with('success', 'Relatório apagado com sucesso.');
+    }
+
+    private function storeUploadedPhotos(Request $request): array
+    {
+        if (!$request->hasFile('fotos')) {
+            return [];
+        }
+
+        $paths = [];
+        foreach ((array) $request->file('fotos') as $file) {
+            if ($file && $file->isValid()) {
+                $paths[] = $file->store('reports', 'public');
+            }
+        }
+
+        return $paths;
     }
 }

@@ -16,7 +16,7 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-lg p-6 space-y-5">
-        <form method="POST" action="{{ route('admin.relatorios.update', $report->id) }}" class="space-y-5">
+        <form method="POST" action="{{ route('admin.relatorios.update', $report->id) }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PATCH')
 
@@ -76,10 +76,11 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.pontos.index', ['report_id' => $report->id]) }}"
+            <button type="button"
+               onclick="openAdminPontosModal()"
                class="inline-flex items-center mt-3 px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium w-full sm:w-auto justify-center sm:justify-start">
                 Ir para Gestão de Pontos
-            </a>
+            </button>
         </div>
 
         <div>
@@ -89,7 +90,45 @@
                       class="mt-2 w-full p-4 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 whitespace-pre-wrap break-words focus:ring-blue-500 focus:border-blue-500">{{ old('descricao', $report->descricao) }}</textarea>
         </div>
 
-            <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-100">
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Fotos do Relatório</p>
+
+            @if(!empty($report->fotos))
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    @foreach($report->fotos as $foto)
+                        <div class="block rounded-lg border border-gray-200 bg-white p-2">
+                            <a href="{{ asset('storage/' . $foto) }}" target="_blank" rel="noopener noreferrer">
+                                <img src="{{ asset('storage/' . $foto) }}"
+                                     alt="Foto do relatório"
+                                     class="w-full h-28 object-cover rounded-md">
+                            </a>
+                            <div class="mt-2">
+                                <label class="inline-flex items-center gap-2 text-sm text-red-700">
+                                    <input type="checkbox" name="remove_fotos[]" value="{{ $foto }}" class="rounded border-gray-300">
+                                    Remover foto
+                                </label>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-sm text-gray-500">Sem fotos anexadas.</p>
+            @endif
+
+            <div>
+                <label for="fotos" class="block text-sm font-medium text-gray-700 mb-1">Adicionar novas fotos (opcional)</label>
+                <input id="fotos"
+                       name="fotos[]"
+                       type="file"
+                       accept="image/*"
+                       capture="environment"
+                       multiple
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar da galeria (até 5 fotos, máx. 5MB cada).</p>
+            </div>
+        </div>
+
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
                 <button type="submit"
                         class="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition font-medium">
                     Guardar alterações
@@ -98,8 +137,69 @@
                    class="inline-flex items-center px-4 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition font-medium">
                     Cancelar
                 </a>
+                <form method="POST" action="{{ route('admin.relatorios.destroy', $report->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            onclick="return confirm('Tem certeza que deseja apagar este relatório?')"
+                            class="inline-flex items-center px-4 py-2 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition font-medium">
+                        Apagar relatório
+                    </button>
+                </form>
             </div>
         </form>
     </div>
 </div>
+
+<div id="admin-pontos-modal"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-0"
+     aria-hidden="true">
+    <div class="absolute inset-0 bg-black/50" onclick="closeAdminPontosModal()"></div>
+    <div class="relative bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+         style="width: 70vw; height: 70vh; border: 12px solid #1f2937; box-sizing: border-box;">
+        <div class="flex items-center justify-between px-4 py-3 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">Gestão de Pontos</h2>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('admin.pontos.index', ['report_id' => $report->id]) }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="btn btn-ghost btn-sm">
+                    Abrir em nova aba
+                </a>
+                <button type="button" class="btn btn-primary btn-sm" onclick="closeAdminPontosModal()">
+                    Fechar
+                </button>
+            </div>
+        </div>
+        <iframe src="{{ route('admin.pontos.index', ['report_id' => $report->id]) }}"
+                title="Gestão de Pontos"
+                class="w-full flex-1 border-0"></iframe>
+    </div>
+</div>
+
+<script>
+function openAdminPontosModal() {
+    const modal = document.getElementById('admin-pontos-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeAdminPontosModal() {
+    const modal = document.getElementById('admin-pontos-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('overflow-hidden');
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeAdminPontosModal();
+    }
+});
+</script>
 @endsection

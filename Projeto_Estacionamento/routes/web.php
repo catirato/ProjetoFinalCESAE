@@ -105,11 +105,13 @@ Route::middleware(['auth:utilizador'])->group(function () {
         Route::get('/admin/reservas/{id}/editar', [ReservaController::class, 'edit'])->name('admin.reservas.edit');
         Route::put('/admin/reservas/{id}', [ReservaController::class, 'update'])->name('admin.reservas.update');
         Route::delete('/admin/reservas/{id}/cancelar', [ReservaController::class, 'adminCancel'])->name('admin.reservas.cancel');
+        Route::post('/admin/reservas/cancelar-selecionadas', [ReservaController::class, 'adminBulkCancel'])->name('admin.reservas.bulk-cancel');
 
         Route::get('/admin/relatorios', [ReportController::class, 'index'])->name('admin.relatorios.index');
         Route::get('/admin/relatorios/{id}/editar', [ReportController::class, 'edit'])->name('admin.relatorios.edit');
         Route::get('/admin/relatorios/{id}', [ReportController::class, 'show'])->name('admin.relatorios.show');
         Route::patch('/admin/relatorios/{id}', [ReportController::class, 'update'])->name('admin.relatorios.update');
+        Route::delete('/admin/relatorios/{id}', [ReportController::class, 'destroy'])->name('admin.relatorios.destroy');
         Route::patch('/admin/relatorios/{id}/validar', [ReportController::class, 'validar'])->name('admin.relatorios.validar');
         Route::patch('/admin/relatorios/{id}/rejeitar', [ReportController::class, 'rejeitar'])->name('admin.relatorios.rejeitar');
     });

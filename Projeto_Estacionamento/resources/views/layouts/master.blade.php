@@ -30,10 +30,10 @@
                     @if(auth('utilizador')->user()->role === 'SEGURANCA')
                         <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost btn-sm">Reservas de Hoje</a>
                     @else
-                        <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
+                        <a href="{{ route('dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
                     @endif
                 @else
-                    <a href="{{ url('/dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
+                    <a href="{{ route('dashboard') }}" class="btn btn-ghost btn-sm">Painel de Controlo</a>
                 @endauth
 
                 <a href="{{ route('regras.sistema') }}" class="btn btn-ghost btn-sm">Regras do Sistema</a>
@@ -80,11 +80,11 @@
                     @if(auth('utilizador')->user()->role === 'SEGURANCA')
                         <a href="{{ route('seguranca.reservas.hoje') }}" class="btn btn-ghost justify-start">Reservas de Hoje</a>
                     @else
-                        <a href="{{ url('/dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
+                        <a href="{{ route('dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
                     @endif
                     <a href="{{ url('/perfil') }}" class="btn btn-ghost justify-start">Meu Perfil</a>
                 @else
-                    <a href="{{ url('/dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
+                    <a href="{{ route('dashboard') }}" class="btn btn-ghost justify-start">Painel de Controlo</a>
                 @endauth
 
                 <a href="{{ route('regras.sistema') }}" class="btn btn-ghost justify-start">Regras do Sistema</a>

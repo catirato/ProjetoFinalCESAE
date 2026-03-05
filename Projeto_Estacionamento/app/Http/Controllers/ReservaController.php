@@ -177,9 +177,9 @@ class ReservaController extends Controller
             $validationRules['modo_reserva'] = 'required|in:COLAB,ADMIN';
             $validationRules['tipo_periodo'] = 'required|in:UNICO,INTERVALO';
             $validationRules['data'] = 'required_if:tipo_periodo,UNICO|nullable|date';
-            $validationRules['periodos'] = 'required_if:tipo_periodo,INTERVALO|nullable|array|min:1';
-            $validationRules['periodos.*.data_inicio'] = 'required_with:periodos|date';
-            $validationRules['periodos.*.data_fim'] = 'required_with:periodos|date';
+            $validationRules['periodos'] = 'nullable|required_if:tipo_periodo,INTERVALO|array|min:1';
+            $validationRules['periodos.*.data_inicio'] = 'nullable|required_if:tipo_periodo,INTERVALO|date';
+            $validationRules['periodos.*.data_fim'] = 'nullable|required_if:tipo_periodo,INTERVALO|date';
             $validationRules['justificacao_tipo'] = 'required_if:modo_reserva,ADMIN|nullable|in:EVENTO,OBRAS,MOBILIDADE_REDUZIDA,OUTRO';
             $validationRules['justificacao_detalhe'] = 'nullable|string|max:500';
             $validationRules['lugar_id'] = 'nullable|exists:lugar,id';
@@ -319,6 +319,10 @@ class ReservaController extends Controller
             $jaTemReserva = Reserva::where('utilizador_id', $user->id)
                 ->whereIn('data', $datasReserva)
                 ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->where(function ($q) {
+                    $q->where('modo_reserva', 'COLAB')
+                        ->orWhereNull('modo_reserva');
+                })
                 ->exists();
 
             if ($jaTemReserva) {
@@ -527,6 +531,8 @@ class ReservaController extends Controller
             'descricao' => "Cancelou reserva do lugar {$reserva->lugar->numero}",
         ]);
 
+        NotificationService::notifyListaEspera($reserva->data, $reserva->lugar_id);
+
         return redirect('/reservas')->with('success', $mensagem);
     }
 
@@ -620,35 +626,105 @@ class ReservaController extends Controller
             return back()->with('error', 'Apenas reservas ativas podem ser canceladas.');
         }
 
-        $isReservaColab = ($reserva->modo_reserva ?? 'COLAB') === 'COLAB';
-
-        DB::transaction(function () use ($reserva, $admin) {
-            $reserva->update(['estado' => 'CANCELADA']);
-
-            if (($reserva->modo_reserva ?? 'COLAB') === 'COLAB') {
-                $reserva->utilizador->increment('pontos', 3);
-                MovimentoPontos::create([
-                    'utilizador_id' => $reserva->utilizador_id,
-                    'reserva_id' => $reserva->id,
-                    'tipo' => 'AJUSTE',
-                    'pontos' => 3,
-                ]);
-            }
-
-            HistoricoEventos::create([
-                'utilizador_id' => $reserva->utilizador_id,
-                'tipo_evento' => 'RESERVA',
-                'entidade_id' => $reserva->id,
-                'acao' => 'CANCELADO',
-                'descricao' => "Admin {$admin->nome} cancelou reserva #{$reserva->id} (lugar {$reserva->lugar->numero})",
-            ]);
-        });
+        $isReservaColab = $this->cancelReservaAsAdmin($reserva, $admin);
 
         $mensagem = $isReservaColab
             ? 'Reserva cancelada com sucesso. Foram devolvidos 3 pontos ao utilizador.'
             : 'Reserva cancelada com sucesso.';
 
+        NotificationService::notifyListaEspera($reserva->data, $reserva->lugar_id);
+
         return redirect('/reservas')->with('success', $mensagem);
+    }
+
+    public function adminBulkCancel(Request $request)
+    {
+        $admin = auth('utilizador')->user();
+        if ($admin->role !== 'ADMIN') {
+            abort(403, 'Apenas administradores podem cancelar reservas de outros utilizadores.');
+        }
+
+        $validated = $request->validate([
+            'reserva_ids' => 'required|array|min:1',
+            'reserva_ids.*' => 'integer|distinct',
+        ], [
+            'reserva_ids.required' => 'Selecione pelo menos uma reserva.',
+            'reserva_ids.min' => 'Selecione pelo menos uma reserva.',
+        ]);
+
+        $reservaIds = array_values(array_unique(array_map('intval', $validated['reserva_ids'] ?? [])));
+        if (empty($reservaIds)) {
+            return back()->with('error', 'Selecione pelo menos uma reserva válida.');
+        }
+
+        $reservasAtivas = Reserva::with(['lugar', 'utilizador'])
+            ->whereIn('id', $reservaIds)
+            ->where('estado', 'ATIVA')
+            ->get();
+
+        if ($reservasAtivas->isEmpty()) {
+            return back()->with('error', 'Nenhuma das reservas selecionadas está ativa para cancelamento.');
+        }
+
+        $canceladas = 0;
+        $canceladasColab = 0;
+
+        DB::transaction(function () use ($reservasAtivas, $admin, &$canceladas, &$canceladasColab) {
+            foreach ($reservasAtivas as $reserva) {
+                $isColab = $this->cancelReservaAsAdmin($reserva, $admin);
+                $canceladas++;
+                if ($isColab) {
+                    $canceladasColab++;
+                }
+            }
+        });
+
+        $ignoradas = max(0, count($reservaIds) - $canceladas);
+        $mensagem = "{$canceladas} reserva(s) cancelada(s) com sucesso.";
+        if ($canceladasColab > 0) {
+            $mensagem .= " Foram devolvidos 3 pontos em {$canceladasColab} reserva(s) de colaborador.";
+        }
+        if ($ignoradas > 0) {
+            $mensagem .= " {$ignoradas} reserva(s) foram ignoradas por não estarem ativas.";
+        }
+
+        $datasAfetadas = $reservasAtivas
+            ->pluck('data')
+            ->unique()
+            ->values();
+
+        foreach ($datasAfetadas as $dataAfetada) {
+            NotificationService::notifyListaEspera((string) $dataAfetada);
+        }
+
+        return redirect('/reservas')->with('success', $mensagem);
+    }
+
+    private function cancelReservaAsAdmin(Reserva $reserva, $admin): bool
+    {
+        $isReservaColab = ($reserva->modo_reserva ?? 'COLAB') === 'COLAB';
+
+        $reserva->update(['estado' => 'CANCELADA']);
+
+        if ($isReservaColab) {
+            $reserva->utilizador->increment('pontos', 3);
+            MovimentoPontos::create([
+                'utilizador_id' => $reserva->utilizador_id,
+                'reserva_id' => $reserva->id,
+                'tipo' => 'AJUSTE',
+                'pontos' => 3,
+            ]);
+        }
+
+        HistoricoEventos::create([
+            'utilizador_id' => $reserva->utilizador_id,
+            'tipo_evento' => 'RESERVA',
+            'entidade_id' => $reserva->id,
+            'acao' => 'CANCELADO',
+            'descricao' => "Admin {$admin->nome} cancelou reserva #{$reserva->id} (lugar {$reserva->lugar->numero})",
+        ]);
+
+        return $isReservaColab;
     }
 
     // API para AJAX - Buscar lugares disponíveis
@@ -741,6 +817,10 @@ class ReservaController extends Controller
             $reservaDoDia = Reserva::where('utilizador_id', $user->id)
                 ->where('data', $data)
                 ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->where(function ($q) {
+                    $q->where('modo_reserva', 'COLAB')
+                        ->orWhereNull('modo_reserva');
+                })
                 ->with('lugar:id,numero')
                 ->latest('id')
                 ->first();

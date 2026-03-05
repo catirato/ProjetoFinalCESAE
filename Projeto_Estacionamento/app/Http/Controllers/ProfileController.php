@@ -103,15 +103,17 @@ class ProfileController extends Controller
             'nome' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', 'unique:utilizador,email,' . $user->id],
             'telemovel' => ['nullable', 'string', 'max:20'],
-            'foto_perfil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'foto_perfil' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
         ]);
 
         if ($request->hasFile('foto_perfil')) {
+            $newPhotoPath = $request->file('foto_perfil')->store('perfil', 'public');
+
             if ($user->foto_perfil_path && Storage::disk('public')->exists($user->foto_perfil_path)) {
                 Storage::disk('public')->delete($user->foto_perfil_path);
             }
 
-            $validated['foto_perfil_path'] = $request->file('foto_perfil')->store('perfil', 'public');
+            $validated['foto_perfil_path'] = $newPhotoPath;
         }
 
         $user->update([

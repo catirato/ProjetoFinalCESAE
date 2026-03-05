@@ -159,7 +159,7 @@
         <div class="bg-white rounded-xl shadow-lg p-6 mt-8">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Lista de Espera Atual</h2>
             <p class="text-sm text-gray-600 mb-4">
-                Veja quem está na frente na lista (por questões de transparência)
+                Veja quem está na lista de espera (não existe ordem de preferência)
             </p>
 
             <div class="overflow-x-auto">

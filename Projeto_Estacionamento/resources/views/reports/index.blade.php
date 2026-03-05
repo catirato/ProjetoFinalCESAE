@@ -70,7 +70,7 @@
                     <span class="font-semibold">Utilizador:</span> {{ $report->utilizador->nome ?? 'N/A' }}
                 </p>
                 <p class="text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($report->descricao, 150) }}</p>
-                <div class="flex flex-wrap gap-2 pt-1">
+                <div class="flex items-center gap-2 pt-1 whitespace-nowrap">
                     <a href="{{ route('admin.relatorios.show', $report->id) }}"
                        class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium">
                         Ver
@@ -79,6 +79,15 @@
                        class="inline-flex items-center px-3 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
                         Editar
                     </a>
+                    <form method="POST" action="{{ route('admin.relatorios.destroy', $report->id) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                onclick="return confirm('Tem certeza que deseja apagar este relatório?')"
+                                class="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition font-medium">
+                            Apagar
+                        </button>
+                    </form>
                 </div>
             </article>
         @empty
@@ -87,7 +96,7 @@
     </div>
 
     <div class="hidden md:block bg-white rounded-xl shadow-lg overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="min-w-full table-fixed divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -105,7 +114,7 @@
                             Tipo {{ $sortIcon('tipo') }}
                         </a>
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="w-[340px] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <a href="{{ request()->fullUrlWithQuery(['sort' => 'descricao', 'direction' => $nextDirection('descricao'), 'page' => 1]) }}" class="hover:text-gray-700">
                             Descrição {{ $sortIcon('descricao') }}
                         </a>
@@ -131,13 +140,15 @@
                             {{ $report->tipo }}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">
-                            {{ \Illuminate\Support\Str::limit($report->descricao, 110) }}
+                            <div class="truncate" title="{{ $report->descricao }}">
+                                {{ \Illuminate\Support\Str::limit($report->descricao, 40) }}
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ $report->estado }}
                         </td>
                         <td class="px-6 py-4 text-sm">
-                            <div class="flex items-center gap-2 flex-wrap">
+                            <div class="flex items-center gap-2 whitespace-nowrap">
                                 <a href="{{ route('admin.relatorios.show', $report->id) }}"
                                    class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-100 text-blue-800 hover:bg-blue-200 transition font-medium">
                                     Ver
@@ -146,6 +157,15 @@
                                    class="inline-flex items-center px-3 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition font-medium">
                                     Editar
                                 </a>
+                                <form method="POST" action="{{ route('admin.relatorios.destroy', $report->id) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            onclick="return confirm('Tem certeza que deseja apagar este relatório?')"
+                                            class="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition font-medium">
+                                        Apagar
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

@@ -29,6 +29,7 @@
         </a>
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Nova Reserva</h1>
         <p class="text-gray-600 mt-1">Reserve uma vaga de estacionamento</p>
+
     </div>
 
     <!-- User Points Card -->
@@ -205,7 +206,18 @@
 
         <!-- Available Places -->
         <div class="bg-white rounded-xl shadow-lg p-6" id="places-section" style="display: none;">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">{{ $isAdmin ? '4' : '2' }}. Escolha o Lugar</h2>
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <h2 class="text-xl font-bold text-gray-900">{{ $isAdmin ? '4' : '2' }}. Escolha o Lugar</h2>
+                @if($isAdmin)
+                    <div id="admin-management-button-wrapper" class="{{ $modoReservaOld === 'ADMIN' ? '' : 'hidden' }}">
+                        <button type="button"
+                                onclick="openAdminReservasModal()"
+                                class="btn btn-outline btn-sm whitespace-nowrap">
+                            Gestão de Reservas
+                        </button>
+                    </div>
+                @endif
+            </div>
 
             <div id="places-loading" class="text-center py-8">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -251,16 +263,70 @@
 
 </div>
 
+@if($isAdmin)
+    <div id="admin-reservas-modal"
+         class="fixed inset-0 z-50 hidden items-center justify-center p-0"
+         aria-hidden="true">
+        <div class="absolute inset-0 bg-black/50" onclick="closeAdminReservasModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+             style="width: 70vw; height: 70vh; border: 12px solid #1f2937; box-sizing: border-box;">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Gestão de Reservas</h2>
+                <div class="flex items-center gap-2">
+                    <a href="{{ url('/reservas') }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="btn btn-ghost btn-sm">
+                        Abrir em nova aba
+                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="closeAdminReservasModal()">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+            <iframe src="{{ url('/reservas') }}"
+                    title="Gestão de Reservas"
+                    class="w-full flex-1 border-0"></iframe>
+        </div>
+    </div>
+@endif
+
 <script>
 let selectedPlace = null;
 let selectedPlaces = new Set();
 let selectedPlacesByDay = {};
 let intervalDates = [];
 let periodRowCounter = 0;
+let pendingSelectionRestore = null;
 const isAdmin = @json($isAdmin);
 const oldLugarId = @json(old('lugar_id'));
 const oldLugarIds = @json(old('lugar_ids', []));
 const oldLugaresPorDia = @json(old('lugares_por_dia', []));
+
+function openAdminReservasModal() {
+    const modal = document.getElementById('admin-reservas-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeAdminReservasModal() {
+    const modal = document.getElementById('admin-reservas-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('overflow-hidden');
+    checkAvailability(true);
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeAdminReservasModal();
+    }
+});
 
 function isWeekend(dateString) {
     const selectedDate = new Date(dateString + 'T00:00:00');
@@ -290,9 +356,11 @@ function updateFormByMode() {
     const justificacaoSection = document.getElementById('justificacao-section');
     const costInfo = document.getElementById('cost-info');
     const pointsCard = document.getElementById('points-card');
+    const adminManagementButtonWrapper = document.getElementById('admin-management-button-wrapper');
     const tipoPeriodoUnico = document.querySelector('input[name="tipo_periodo"][value="UNICO"]');
 
     if (modo === 'ADMIN') {
+        if (adminManagementButtonWrapper) adminManagementButtonWrapper.classList.remove('hidden');
         if (periodoSection) periodoSection.classList.remove('hidden');
         if (singleDateFields) singleDateFields.classList.toggle('hidden', tipoPeriodo === 'INTERVALO');
         if (rangeDateFields) rangeDateFields.classList.toggle('hidden', tipoPeriodo !== 'INTERVALO');
@@ -307,6 +375,7 @@ function updateFormByMode() {
         if (costInfo) costInfo.classList.add('hidden');
         if (pointsCard) pointsCard.classList.add('hidden');
     } else {
+        if (adminManagementButtonWrapper) adminManagementButtonWrapper.classList.add('hidden');
         if (periodoSection) periodoSection.classList.add('hidden');
         if (tipoPeriodoUnico) tipoPeriodoUnico.checked = true;
         if (singleDateFields) singleDateFields.classList.remove('hidden');
@@ -322,7 +391,23 @@ function updateFormByMode() {
     checkAvailability();
 }
 
-function checkAvailability() {
+function buildSelectionSnapshot(isAdminInterval) {
+    if (isAdminInterval) {
+        const lugaresPorDia = {};
+        Object.keys(selectedPlacesByDay).forEach((date) => {
+            lugaresPorDia[date] = Array.from(selectedPlacesByDay[date]);
+        });
+        return { type: 'interval', lugaresPorDia };
+    }
+
+    return {
+        type: 'single',
+        selectedPlace: selectedPlace ? Number(selectedPlace) : null,
+        selectedPlaces: Array.from(selectedPlaces),
+    };
+}
+
+function checkAvailability(preserveSelection = false) {
     const data = document.getElementById('data').value;
     const intervalPeriods = getIntervalPeriods();
     const completePeriods = intervalPeriods.filter((periodo) => periodo.data_inicio && periodo.data_fim);
@@ -340,6 +425,7 @@ function checkAvailability() {
     const modo = getModoReserva();
     const tipoPeriodo = getTipoPeriodo();
     const isAdminInterval = isAdmin && modo === 'ADMIN' && tipoPeriodo === 'INTERVALO';
+    pendingSelectionRestore = preserveSelection ? buildSelectionSnapshot(isAdminInterval) : null;
 
     if (!isAdminInterval && !data) {
         weekendError.classList.add('hidden');
@@ -518,6 +604,24 @@ function loadPlaces(places) {
 
     document.getElementById('places-content').innerHTML = html;
 
+    if (pendingSelectionRestore && pendingSelectionRestore.type === 'single') {
+        const idsToRestore = modo === 'ADMIN'
+            ? pendingSelectionRestore.selectedPlaces
+            : [pendingSelectionRestore.selectedPlace];
+
+        idsToRestore
+            .filter((id) => Number.isFinite(Number(id)))
+            .forEach((id) => {
+                const numericId = Number(id);
+                if (document.getElementById('place-' + numericId)) {
+                    selectPlace(numericId);
+                }
+            });
+
+        pendingSelectionRestore = null;
+        return;
+    }
+
     if (modo === 'ADMIN' && Array.isArray(oldLugarIds) && oldLugarIds.length > 0) {
         oldLugarIds.forEach((id) => {
             const btn = document.getElementById('place-' + id);
@@ -600,6 +704,26 @@ function loadPlacesByDay(days) {
     html += '<p class="text-sm text-gray-600 mt-4">Pode selecionar os lugares que quiser em cada dia útil.</p>';
 
     placesContent.innerHTML = html;
+
+    if (pendingSelectionRestore && pendingSelectionRestore.type === 'interval') {
+        Object.keys(pendingSelectionRestore.lugaresPorDia || {}).forEach((data) => {
+            const ids = Array.isArray(pendingSelectionRestore.lugaresPorDia[data])
+                ? pendingSelectionRestore.lugaresPorDia[data]
+                : [];
+
+            ids.forEach((id) => {
+                const numericId = Number(id);
+                const btnId = `place-${data.replace(/[^0-9]/g, '')}-${numericId}`;
+                if (document.getElementById(btnId)) {
+                    selectPlaceByDay(data, numericId);
+                }
+            });
+        });
+
+        pendingSelectionRestore = null;
+        refreshHiddenPlacesByDayInputs();
+        return;
+    }
 
     Object.keys(oldLugaresPorDia || {}).forEach((data) => {
         const ids = Array.isArray(oldLugaresPorDia[data]) ? oldLugaresPorDia[data] : [];

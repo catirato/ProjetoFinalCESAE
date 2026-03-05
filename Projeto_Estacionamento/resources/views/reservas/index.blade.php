@@ -32,7 +32,7 @@
         };
     @endphp
 
-    
+
     <!-- Header -->
     <div class="mb-8 flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
         <div>
@@ -43,7 +43,7 @@
                 {{ auth('utilizador')->user()->role === 'ADMIN' ? 'Histórico e gestão global de reservas' : 'Gerir as suas reservas de estacionamento' }}
             </p>
         </div>
-        <a href="{{ url('/reservas/criar') }}" 
+        <a href="{{ url('/reservas/criar') }}"
         class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center md:justify-start w-full md:w-auto">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -51,17 +51,17 @@
             Nova Reserva
         </a>
     </div>
-    
+
     <!-- Tabs -->
     <div class="bg-white rounded-xl shadow-lg mb-6">
         <div class="border-b border-gray-200">
             <nav class="flex -mb-px overflow-x-auto">
-                <button onclick="showTab('ativas')" 
+                <button onclick="showTab('ativas')"
                         id="tab-ativas"
                         class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-600 whitespace-nowrap">
                     Ativas ({{ $reservasAtivas->count() ?? 0 }})
                 </button>
-                <button onclick="showTab('historico')" 
+                <button onclick="showTab('historico')"
                         id="tab-historico"
                         class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
                     Histórico ({{ $reservasHistorico->count() ?? 0 }})
@@ -106,13 +106,43 @@
             </form>
         </div>
     @endif
-    
+
     <!-- Ativas Tab -->
     <div id="content-ativas" class="reservas-tab-content">
+        @if($isAdmin && isset($reservasAtivas) && $reservasAtivas->count() > 0)
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <input type="checkbox" id="select-all-reservas" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    Selecionar todas
+                </label>
+
+                <form id="bulk-cancel-form"
+                      action="{{ route('admin.reservas.bulk-cancel') }}"
+                      method="POST"
+                      onsubmit="return prepareBulkCancelSubmit()">
+                    @csrf
+                    <div id="bulk-cancel-selected-inputs"></div>
+                    <button type="submit"
+                            id="bulk-cancel-button"
+                            disabled
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Cancelar selecionadas
+                    </button>
+                </form>
+            </div>
+        @endif
+
         <div class="md:hidden space-y-3 mb-4">
             @forelse($reservasAtivas ?? [] as $reserva)
                 <article class="bg-white rounded-xl shadow-lg p-4 space-y-3">
                     <div class="flex items-start justify-between gap-2">
+                        @if($isAdmin)
+                            <label class="inline-flex items-center gap-2 mr-2">
+                                <input type="checkbox"
+                                       class="js-reserva-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                       value="{{ $reserva->id }}">
+                            </label>
+                        @endif
                         <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold inline-block text-sm">
                             Lugar {{ $reserva->lugar->numero ?? 'N/A' }}
                         </div>
@@ -152,36 +182,46 @@
                         @endif
                     </div>
 
-                    <div class="pt-1 flex flex-wrap items-center gap-3 text-sm font-medium">
-                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
-                            Ver detalhes
-                        </a>
-
-                        @if($isAdmin)
-                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
-                                Editar
+                    @if($isAdmin)
+                        <div class="pt-1 text-sm font-medium">
+                            <div class="flex items-center justify-center gap-3 whitespace-nowrap">
+                                <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                    Ver detalhes
+                                </a>
+                                <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
+                                    Editar
+                                </a>
+                            </div>
+                            <div class="mt-1 flex justify-center">
+                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                            class="text-red-600 hover:text-red-800">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <div class="pt-1 flex items-center gap-3 text-sm font-medium whitespace-nowrap">
+                            <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                Ver detalhes
                             </a>
-                            <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                        class="text-red-600 hover:text-red-800">
-                                    Cancelar
-                                </button>
-                            </form>
-                        @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
-                            <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                        class="text-red-600 hover:text-red-800">
-                                    Cancelar
-                                </button>
-                            </form>
-                        @endif
-                    </div>
+                            @if($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+                                <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                            class="text-red-600 hover:text-red-800">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    @endif
                 </article>
             @empty
                 <div class="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
@@ -194,6 +234,11 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        @if($isAdmin)
+                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Seleção
+                            </th>
+                        @endif
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <a href="{{ request()->fullUrlWithQuery(['sort_ativas' => 'lugar', 'direction_ativas' => $nextDirectionAtivas('lugar'), 'tab' => 'ativas']) }}" class="hover:text-gray-700">
                                 Lugar Reservado {{ $sortIconAtivas('lugar') }}
@@ -224,6 +269,13 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($reservasAtivas ?? [] as $reserva)
                             <tr class="hover:bg-gray-50">
+                                @if($isAdmin)
+                                    <td class="px-2 py-4 whitespace-nowrap text-center">
+                                        <input type="checkbox"
+                                               class="js-reserva-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                               value="{{ $reserva->id }}">
+                                    </td>
+                                @endif
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold inline-block">
                                         Lugar {{ $reserva->lugar->numero ?? 'N/A' }}
@@ -262,26 +314,34 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
-                                            Ver detalhes
-                                        </a>
-
-                                        @if($isAdmin)
-                                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
-                                               class="text-indigo-600 hover:text-indigo-800">
-                                                Editar
+                                    @if($isAdmin)
+                                        <div class="flex flex-col items-center">
+                                            <div class="flex items-center gap-3 whitespace-nowrap">
+                                                <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                                    Ver detalhes
+                                                </a>
+                                                <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
+                                                   class="text-indigo-600 hover:text-indigo-800">
+                                                    Editar
+                                                </a>
+                                            </div>
+                                            <div class="mt-1">
+                                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                                            class="text-red-600 hover:text-red-800">
+                                                        Cancelar
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
+                                        <div class="flex items-center gap-3 whitespace-nowrap">
+                                            <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                                Ver detalhes
                                             </a>
-                                            <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                        onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                                        class="text-red-600 hover:text-red-800">
-                                                    Cancelar
-                                                </button>
-                                            </form>
-                                        @elseif($reserva->estado === 'ATIVA' && \Carbon\Carbon::parse($reserva->data)->isFuture())
                                             <form action="{{ url('/reservas/' . $reserva->id . '/cancelar') }}" method="POST">
                                                 @csrf
                                                 @method('DELETE')
@@ -291,13 +351,17 @@
                                                     Cancelar
                                                 </button>
                                             </form>
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @else
+                                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                            Ver detalhes
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $isAdmin ? '5' : '4' }}" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="{{ $isAdmin ? '6' : '4' }}" class="px-6 py-8 text-center text-gray-500">
                                 Sem reservas ativas.
                             </td>
                         </tr>
@@ -306,7 +370,7 @@
             </table>
         </div>
     </div>
-    
+
     <!-- Histórico Tab -->
     <div id="content-historico" class="reservas-tab-content hidden">
         <div class="md:hidden space-y-3 mb-4">
@@ -349,27 +413,37 @@
                         @endif
                     </div>
 
-                    <div class="pt-1 flex flex-wrap items-center gap-3 text-sm font-medium">
-                        <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
-                            Ver detalhes
-                        </a>
-                        @if($isAdmin)
-                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
-                                Editar
-                            </a>
+                    @if($isAdmin)
+                        <div class="pt-1 text-sm font-medium">
+                            <div class="flex items-center justify-center gap-3 whitespace-nowrap">
+                                <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                    Ver detalhes
+                                </a>
+                                <a href="{{ route('admin.reservas.edit', $reserva->id) }}" class="text-indigo-600 hover:text-indigo-800">
+                                    Editar
+                                </a>
+                            </div>
                             @if($reserva->estado === 'ATIVA')
-                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                            class="text-red-600 hover:text-red-800">
-                                        Cancelar
-                                    </button>
-                                </form>
+                                <div class="mt-1 flex justify-center">
+                                    <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                                class="text-red-600 hover:text-red-800">
+                                            Cancelar
+                                        </button>
+                                    </form>
+                                </div>
                             @endif
-                        @endif
-                    </div>
+                        </div>
+                    @else
+                        <div class="pt-1 text-sm font-medium">
+                            <a href="{{ url('/reservas/' . $reserva->id) }}" class="text-blue-600 hover:text-blue-900">
+                                Ver detalhes
+                            </a>
+                        </div>
+                    @endif
                 </article>
             @empty
                 <div class="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
@@ -449,29 +523,38 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex flex-wrap items-center gap-3">
+                                    @if($isAdmin)
+                                        <div class="flex flex-col items-center">
+                                            <div class="flex items-center gap-3 whitespace-nowrap">
+                                                <a href="{{ url('/reservas/' . $reserva->id) }}"
+                                                   class="text-blue-600 hover:text-blue-900">
+                                                    Ver detalhes
+                                                </a>
+                                                <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
+                                                   class="text-indigo-600 hover:text-indigo-800">
+                                                    Editar
+                                                </a>
+                                            </div>
+                                            @if($reserva->estado === 'ATIVA')
+                                                <div class="mt-1">
+                                                    <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                                onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
+                                                                class="text-red-600 hover:text-red-800">
+                                                            Cancelar
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @else
                                         <a href="{{ url('/reservas/' . $reserva->id) }}"
                                            class="text-blue-600 hover:text-blue-900">
                                             Ver detalhes
                                         </a>
-                                        @if($isAdmin)
-                                            <a href="{{ route('admin.reservas.edit', $reserva->id) }}"
-                                               class="text-indigo-600 hover:text-indigo-800">
-                                                Editar
-                                            </a>
-                                            @if($reserva->estado === 'ATIVA')
-                                                <form action="{{ route('admin.reservas.cancel', $reserva->id) }}" method="POST">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            onclick="return confirm('Tem certeza que deseja cancelar esta reserva?')"
-                                                            class="text-red-600 hover:text-red-800">
-                                                        Cancelar
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        @endif
-                                    </div>
+                                    @endif
                                 </td>
                             </tr>
                     @empty
@@ -484,7 +567,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Pagination -->
         @if(isset($reservasHistorico) && method_exists($reservasHistorico, 'hasPages') && $reservasHistorico->hasPages())
             <div class="mt-6">
@@ -492,7 +575,7 @@
             </div>
         @endif
     </div>
-    
+
 </div>
 
 <script>
@@ -501,19 +584,70 @@ function showTab(tabName) {
     document.querySelectorAll('.reservas-tab-content').forEach(tab => {
         tab.classList.add('hidden');
     });
-    
+
     // Remove active style from all buttons
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('border-blue-600', 'text-blue-600');
         btn.classList.add('border-transparent', 'text-gray-500');
     });
-    
+
     // Show selected tab
     document.getElementById('content-' + tabName).classList.remove('hidden');
-    
+
     // Add active style to selected button
     document.getElementById('tab-' + tabName).classList.remove('border-transparent', 'text-gray-500');
     document.getElementById('tab-' + tabName).classList.add('border-blue-600', 'text-blue-600');
+}
+
+function getSelectedReservaIds() {
+    const selected = new Set();
+    document.querySelectorAll('.js-reserva-checkbox:checked').forEach((checkbox) => {
+        selected.add(String(checkbox.value));
+    });
+    return Array.from(selected);
+}
+
+function updateBulkCancelState() {
+    const bulkButton = document.getElementById('bulk-cancel-button');
+    const selectAll = document.getElementById('select-all-reservas');
+    const checkboxes = Array.from(document.querySelectorAll('.js-reserva-checkbox'));
+    const selectedCount = getSelectedReservaIds().length;
+
+    if (bulkButton) {
+        bulkButton.disabled = selectedCount === 0;
+    }
+
+    if (selectAll) {
+        const total = checkboxes.length;
+        selectAll.checked = total > 0 && selectedCount > 0 && selectedCount === new Set(checkboxes.map((cb) => String(cb.value))).size;
+    }
+}
+
+function prepareBulkCancelSubmit() {
+    const selectedIds = getSelectedReservaIds();
+    if (selectedIds.length === 0) {
+        return false;
+    }
+
+    if (!confirm('Tem certeza que deseja cancelar todas as reservas selecionadas?')) {
+        return false;
+    }
+
+    const container = document.getElementById('bulk-cancel-selected-inputs');
+    if (!container) {
+        return false;
+    }
+
+    container.innerHTML = '';
+    selectedIds.forEach((id) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'reserva_ids[]';
+        input.value = id;
+        container.appendChild(input);
+    });
+
+    return true;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -523,6 +657,22 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         showTab('ativas');
     }
+
+    const selectAll = document.getElementById('select-all-reservas');
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.js-reserva-checkbox').forEach((checkbox) => {
+                checkbox.checked = selectAll.checked;
+            });
+            updateBulkCancelState();
+        });
+    }
+
+    document.querySelectorAll('.js-reserva-checkbox').forEach((checkbox) => {
+        checkbox.addEventListener('change', updateBulkCancelState);
+    });
+
+    updateBulkCancelState();
 });
 </script>
 @endsection
