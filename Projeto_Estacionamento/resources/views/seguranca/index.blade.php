@@ -80,7 +80,7 @@
 
     <div class="bg-white rounded-xl shadow-lg p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Submeter Relatório</h2>
-        <form method="POST" action="{{ route('seguranca.reports.store') }}" class="space-y-4">
+        <form method="POST" action="{{ route('seguranca.reports.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
                 <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
@@ -93,6 +93,17 @@
             <div>
                 <label for="descricao" class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
                 <textarea id="descricao" name="descricao" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2" required></textarea>
+            </div>
+            <div>
+                <label for="fotos" class="block text-sm font-medium text-gray-700 mb-1">Fotos (opcional)</label>
+                <input id="fotos"
+                       name="fotos[]"
+                       type="file"
+                       accept="image/*"
+                       capture="environment"
+                       multiple
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar da galeria (até 5 fotos, máx. 5MB cada).</p>
             </div>
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Enviar relatório

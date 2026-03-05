@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Reserva;
-use App\Models\ListaEspera; 
+use App\Models\ListaEspera;
 use App\Models\MovimentoPontos;
 use App\Models\HistoricoEventos;
 use App\Models\Report;
@@ -39,7 +39,7 @@ class Utilizador extends Authenticatable
         'password' => 'hashed',
     ];
 
-    
+
     // Relações
     public function reservas()
 {

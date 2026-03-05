@@ -32,7 +32,7 @@
             </div>
         @endif
 
-        <form action="{{ route('reports.store') }}" method="POST" class="space-y-6">
+        <form action="{{ route('reports.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
             <div>
@@ -51,6 +51,18 @@
                 <textarea id="descricao" name="descricao" rows="5" required maxlength="2000"
                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Descreva a ocorrência...">{{ old('descricao') }}</textarea>
+            </div>
+
+            <div>
+                <label for="fotos" class="block text-sm font-medium text-gray-700 mb-1">Fotos (opcional)</label>
+                <input id="fotos"
+                       name="fotos[]"
+                       type="file"
+                       accept="image/*"
+                       capture="environment"
+                       multiple
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar da galeria (até 5 fotos, máx. 5MB cada).</p>
             </div>
 
             <div>

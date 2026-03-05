@@ -30,17 +30,33 @@
         <div class="bg-white rounded-xl shadow-lg p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Foto de Perfil</h2>
 
-            <div class="w-48 h-48 mx-auto border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center">
+            <div id="foto-perfil-frame" class="w-48 h-48 mx-auto border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center cursor-grab">
                 @if(!empty($user->foto_perfil_path))
-                    <img src="{{ asset('storage/' . $user->foto_perfil_path) }}" alt="Foto de perfil" class="w-full h-full object-cover">
+                    <img id="foto-perfil-preview"
+                         src="{{ asset('storage/' . $user->foto_perfil_path) }}"
+                         alt="Foto de perfil"
+                         class="w-full h-full object-cover"
+                         style="object-position: {{ old('foto_pos_x', $user->foto_pos_x ?? 50) }}% {{ old('foto_pos_y', $user->foto_pos_y ?? 50) }}%;">
+                    <span id="foto-perfil-placeholder" class="hidden text-gray-400 text-sm text-center px-4">Sem foto<br>de perfil</span>
                 @else
-                    <span class="text-gray-400 text-sm text-center px-4">Sem foto<br>de perfil</span>
+                    <img id="foto-perfil-preview"
+                         src=""
+                         alt="Foto de perfil"
+                         class="hidden w-full h-full object-cover"
+                         style="object-position: {{ old('foto_pos_x', $user->foto_pos_x ?? 50) }}% {{ old('foto_pos_y', $user->foto_pos_y ?? 50) }}%;">
+                    <span id="foto-perfil-placeholder" class="text-gray-400 text-sm text-center px-4">Sem foto<br>de perfil</span>
                 @endif
             </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Dados Pessoais</h2>
+
+            @if(session('success'))
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
+                    {{ session('success') }}
+                </div>
+            @endif
 
             @if($errors->any())
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
@@ -92,9 +108,13 @@
 
                 <div>
                     <label for="foto_perfil" class="block text-sm font-medium text-gray-700 mb-1">Upload de Foto</label>
-                    <input id="foto_perfil" name="foto_perfil" type="file" accept=".jpg,.jpeg,.png,.webp"
+                    <input id="foto_perfil" name="foto_perfil" type="file" accept="image/*,.heic,.heif" capture="environment"
                            {{ $isOwnProfile ? '' : 'disabled' }}
                            class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-xs text-gray-500">Pode escolher da galeria ou tirar foto com a câmara (até 5MB).</p>
+                    <p class="mt-1 text-xs text-gray-500">Clique e arraste a foto no quadrado para ajustar a posição.</p>
+                    <input type="hidden" id="foto_pos_x" name="foto_pos_x" value="{{ old('foto_pos_x', $user->foto_pos_x ?? 50) }}">
+                    <input type="hidden" id="foto_pos_y" name="foto_pos_y" value="{{ old('foto_pos_y', $user->foto_pos_y ?? 50) }}">
                 </div>
 
                 @if($isOwnProfile)
@@ -143,4 +163,98 @@
         @endif
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fotoInput = document.getElementById('foto_perfil');
+    const previewImg = document.getElementById('foto-perfil-preview');
+    const placeholder = document.getElementById('foto-perfil-placeholder');
+    const frame = document.getElementById('foto-perfil-frame');
+    const posXInput = document.getElementById('foto_pos_x');
+    const posYInput = document.getElementById('foto_pos_y');
+    if (!fotoInput || !previewImg || !placeholder || !frame || !posXInput || !posYInput) return;
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+    }
+
+    function applyPosition() {
+        previewImg.style.objectPosition = `${posXInput.value}% ${posYInput.value}%`;
+    }
+
+    fotoInput.addEventListener('change', function (event) {
+        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+        if (!file) return;
+
+        const imageUrl = URL.createObjectURL(file);
+        previewImg.src = imageUrl;
+        previewImg.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        applyPosition();
+    });
+
+    let dragging = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startPosX = Number(posXInput.value);
+    let startPosY = Number(posYInput.value);
+
+    function startDrag(clientX, clientY) {
+        if (previewImg.classList.contains('hidden')) return;
+        dragging = true;
+        startClientX = clientX;
+        startClientY = clientY;
+        startPosX = Number(posXInput.value);
+        startPosY = Number(posYInput.value);
+        frame.classList.remove('cursor-grab');
+        frame.classList.add('cursor-grabbing');
+    }
+
+    function moveDrag(clientX, clientY) {
+        if (!dragging) return;
+        const rect = frame.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+
+        const deltaXPercent = ((clientX - startClientX) / rect.width) * 100;
+        const deltaYPercent = ((clientY - startClientY) / rect.height) * 100;
+
+        posXInput.value = String(clamp(startPosX + deltaXPercent, 0, 100));
+        posYInput.value = String(clamp(startPosY + deltaYPercent, 0, 100));
+        applyPosition();
+    }
+
+    function endDrag() {
+        dragging = false;
+        frame.classList.remove('cursor-grabbing');
+        frame.classList.add('cursor-grab');
+    }
+
+    frame.addEventListener('mousedown', function (event) {
+        event.preventDefault();
+        startDrag(event.clientX, event.clientY);
+    });
+
+    window.addEventListener('mousemove', function (event) {
+        moveDrag(event.clientX, event.clientY);
+    });
+
+    window.addEventListener('mouseup', endDrag);
+
+    frame.addEventListener('touchstart', function (event) {
+        const touch = event.touches && event.touches[0];
+        if (!touch) return;
+        startDrag(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function (event) {
+        const touch = event.touches && event.touches[0];
+        if (!touch) return;
+        moveDrag(touch.clientX, touch.clientY);
+    }, { passive: true });
+
+    window.addEventListener('touchend', endDrag);
+
+    applyPosition();
+});
+</script>
 @endsection

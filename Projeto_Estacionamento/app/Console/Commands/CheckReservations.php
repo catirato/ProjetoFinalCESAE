@@ -11,7 +11,7 @@ use App\Services\NotificationService;
 class CheckReservations extends Command
 {
     protected $signature = 'check:reservations';
-    protected $description = 'Verifica reservas não validadas até 10h30';
+    protected $description = 'Verifica reservas não validadas após o limite de comparência';
 
     public function handle()
     {
@@ -36,5 +36,3 @@ class CheckReservations extends Command
         }
     }
 }
-
-//Cronjob regra 10h30

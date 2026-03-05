@@ -14,8 +14,8 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule): void
     {
-        // Regra das 10h30
-        $schedule->command('check:reservations')->dailyAt('10:31');
+        // Verificação diária de faltas de comparência
+        $schedule->command('check:reservations')->dailyAt('13:01');
 
         // Reset mensal de pontos (último dia do mês)
         $schedule->command('points:reset')->lastDayOfMonth('23:59');

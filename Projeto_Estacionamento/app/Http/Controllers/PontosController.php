@@ -59,9 +59,6 @@ class PontosController extends Controller
             ->when($filtroFuncao !== '', function ($query) use ($filtroFuncao) {
                 $query->where('role', $filtroFuncao);
             })
-            ->when($reportEmAjuste, function ($query) use ($reportEmAjuste) {
-                $query->where('id', $reportEmAjuste->utilizador_id);
-            })
             ->orderBy('nome')
             ->paginate(20)
             ->withQueryString();

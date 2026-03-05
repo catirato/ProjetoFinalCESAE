@@ -83,12 +83,24 @@ class SegurancaController extends Controller
         $validated = $request->validate([
             'tipo' => 'required|in:LUGAR_OCUPADO,SEM_RESERVA,PROBLEMA',
             'descricao' => 'required|string|max:2000',
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+
+        $fotos = [];
+        if ($request->hasFile('fotos')) {
+            foreach ((array) $request->file('fotos') as $file) {
+                if ($file && $file->isValid()) {
+                    $fotos[] = $file->store('reports', 'public');
+                }
+            }
+        }
 
         $report = Report::create([
             'utilizador_id' => auth('utilizador')->id(),
             'tipo' => $validated['tipo'],
             'descricao' => $validated['descricao'],
+            'fotos' => !empty($fotos) ? $fotos : null,
             'estado' => 'PENDENTE',
         ]);
 
@@ -105,7 +117,7 @@ class SegurancaController extends Controller
 
     private function processarNaoComparecenciasAtrasadas(): void
     {
-        $limite = Carbon::today()->setTime(10, 31, 0);
+        $limite = Carbon::today()->setTime(13, 1, 0);
         if (now()->lt($limite)) {
             return;
         }

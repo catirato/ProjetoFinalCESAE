@@ -25,7 +25,7 @@ class NotificationService
         foreach ($entradas as $entrada) {
             $user = $entrada->utilizador;
 
-            if (!$user || $user->role !== 'COLAB' || $user->pontos < 3) {
+            if (!$user || $user->role === 'SEGURANCA' || $user->pontos < 3) {
                 continue;
             }
 
@@ -115,11 +115,13 @@ class NotificationService
             . "Descrição: {$descricao}\n"
             . "Consultar: {$link}";
 
+        $assunto = (string) ($report->tipo ?? 'Novo relatório');
+
         foreach ($admins as $admin) {
             try {
-                Mail::raw($mensagem, function ($mail) use ($admin, $report) {
+                Mail::raw($mensagem, function ($mail) use ($admin, $assunto) {
                     $mail->to($admin->email, $admin->nome)
-                        ->subject("Novo relatório #{$report->id} pendente");
+                        ->subject($assunto);
                 });
             } catch (\Throwable $e) {
                 Log::error('Falha no envio de email do relatório para admin', [

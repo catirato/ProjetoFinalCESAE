@@ -15,12 +15,14 @@ class Report extends Model
         'utilizador_id',
         'tipo',
         'descricao',
+        'fotos',
         'estado',
         'ajuste_pontos_necessario',
         'ajuste_pontos_concluido',
     ];
 
     protected $casts = [
+        'fotos' => 'array',
         'ajuste_pontos_necessario' => 'boolean',
         'ajuste_pontos_concluido' => 'boolean',
     ];

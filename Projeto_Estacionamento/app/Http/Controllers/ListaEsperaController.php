@@ -44,20 +44,22 @@ class ListaEsperaController extends Controller
         
         $user = auth('utilizador')->user();
         
-        // Verificar se já está na lista para esse dia
-        $jaEstaLista = ListaEspera::where('utilizador_id', $user->id)
+        $entradaExistente = ListaEspera::where('utilizador_id', $user->id)
             ->where('data', $request->data)
-            ->where('estado', 'ATIVO')
-            ->exists();
-        
-        if ($jaEstaLista) {
+            ->first();
+
+        if ($entradaExistente && in_array($entradaExistente->estado, ['ATIVO', 'NOTIFICADO', 'ACEITE'], true)) {
             return back()->with('error', 'Já está na lista de espera para este dia!');
         }
         
         // Verificar se já tem reserva para esse dia
         $jaTemReserva = Reserva::where('utilizador_id', $user->id)
             ->where('data', $request->data)
-            ->where('estado', 'ATIVA')
+            ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+            ->where(function ($q) {
+                $q->where('modo_reserva', 'COLAB')
+                    ->orWhereNull('modo_reserva');
+            })
             ->exists();
         
         if ($jaTemReserva) {
@@ -68,14 +70,25 @@ class ListaEsperaController extends Controller
         $prioridade = ListaEspera::where('data', $request->data)
             ->where('estado', 'ATIVO')
             ->count() + 1;
-        
-        // Criar entrada
-        $entrada = ListaEspera::create([
-            'utilizador_id' => $user->id,
-            'data' => $request->data,
-            'estado' => 'ATIVO',
-            'prioridade' => $prioridade,
-        ]);
+
+        if ($entradaExistente) {
+            $entradaExistente->update([
+                'estado' => 'ATIVO',
+                'prioridade' => $prioridade,
+                'notification_token' => null,
+                'notificado_em' => null,
+                'expira_em' => null,
+            ]);
+            $entrada = $entradaExistente;
+        } else {
+            // Criar entrada
+            $entrada = ListaEspera::create([
+                'utilizador_id' => $user->id,
+                'data' => $request->data,
+                'estado' => 'ATIVO',
+                'prioridade' => $prioridade,
+            ]);
+        }
         
         // Registar histórico
         HistoricoEventos::create([
@@ -167,6 +180,10 @@ class ListaEsperaController extends Controller
             $jaTemReserva = Reserva::where('utilizador_id', $user->id)
                 ->where('data', $dataReserva->toDateString())
                 ->whereIn('estado', ['ATIVA', 'PRESENTE'])
+                ->where(function ($q) {
+                    $q->where('modo_reserva', 'COLAB')
+                        ->orWhereNull('modo_reserva');
+                })
                 ->lockForUpdate()
                 ->exists();
             if ($jaTemReserva) {
