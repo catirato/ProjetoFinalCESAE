@@ -51,7 +51,7 @@ class Register extends Controller
             $mensagem .= "A sua conta no sistema de estacionamento foi criada.\n";
             $mensagem .= "Para definir a sua password no primeiro acesso, utilize este link:\n";
             $mensagem .= "{$linkPrimeiroAcesso}\n\n";
-            $mensagem .= "Este link expira em 60 minutos.\n";
+            $mensagem .= "Este link expira em 24 horas.\n";
 
             Mail::raw($mensagem, function ($mail) use ($user) {
                 $mail->to($user->email, $user->nome)

@@ -62,7 +62,7 @@
                        capture="environment"
                        multiple
                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar da galeria (até 5 fotos, máx. 5MB cada).</p>
+                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar do computador/galeria (até 5 fotos, máx. 10MB cada).</p>
             </div>
 
             <div>
