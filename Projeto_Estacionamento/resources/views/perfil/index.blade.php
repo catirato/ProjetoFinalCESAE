@@ -20,10 +20,12 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('pontos.index') }}"
-           class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition whitespace-nowrap">
-            Ver Histórico
-        </a>
+        @if(($user->role ?? null) !== 'SEGURANCA')
+            <a href="{{ route('pontos.index') }}"
+               class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition whitespace-nowrap">
+                Ver Histórico
+            </a>
+        @endif
     </div>
 
     <div class="space-y-8">

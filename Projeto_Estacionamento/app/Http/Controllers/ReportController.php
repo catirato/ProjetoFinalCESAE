@@ -90,7 +90,7 @@ class ReportController extends Controller
             'ajuste_pontos_necessario' => 'nullable|boolean',
             'ajuste_pontos_concluido' => 'nullable|boolean',
             'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'fotos.*' => 'file|mimes:jpg,jpeg,png,webp,heic,heif|max:10240',
             'remove_fotos' => 'nullable|array',
             'remove_fotos.*' => 'string',
         ]);
@@ -136,7 +136,7 @@ class ReportController extends Controller
             'tipo' => 'required|in:LUGAR_OCUPADO,SEM_RESERVA,PROBLEMA',
             'descricao' => 'required|string|max:2000',
             'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'fotos.*' => 'file|mimes:jpg,jpeg,png,webp,heic,heif|max:10240',
         ]);
 
         $uploadedPhotos = $this->storeUploadedPhotos($request);

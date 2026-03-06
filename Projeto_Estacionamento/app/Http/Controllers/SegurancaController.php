@@ -26,18 +26,6 @@ class SegurancaController extends Controller
         return view('seguranca.index', compact('reservasHoje'));
     }
 
-    public function pendentes()
-    {
-        $this->processarNaoComparecenciasAtrasadas();
-
-        $reservasHoje = $this->baseReservasHojeQuery()
-            ->where('estado', 'ATIVA')
-            ->orderBy('lugar_id')
-            ->get();
-
-        return view('seguranca.pendentes', compact('reservasHoje'));
-    }
-
     public function validadas()
     {
         $this->processarNaoComparecenciasAtrasadas();
@@ -48,6 +36,18 @@ class SegurancaController extends Controller
             ->get();
 
         return view('seguranca.validadas', compact('reservasHoje'));
+    }
+
+    public function naoCompareceu()
+    {
+        $this->processarNaoComparecenciasAtrasadas();
+
+        $reservasHoje = $this->baseReservasHojeQuery()
+            ->where('estado', 'NAO_COMPARECEU')
+            ->orderBy('lugar_id')
+            ->get();
+
+        return view('seguranca.nao-compareceu', compact('reservasHoje'));
     }
 
     public function validarChegada($id)
@@ -84,7 +84,7 @@ class SegurancaController extends Controller
             'tipo' => 'required|in:LUGAR_OCUPADO,SEM_RESERVA,PROBLEMA',
             'descricao' => 'required|string|max:2000',
             'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'fotos.*' => 'file|mimes:jpg,jpeg,png,webp,heic,heif|max:10240',
         ]);
 
         $fotos = [];
@@ -117,7 +117,7 @@ class SegurancaController extends Controller
 
     private function processarNaoComparecenciasAtrasadas(): void
     {
-        $limite = Carbon::today()->setTime(13, 1, 0);
+        $limite = Carbon::today()->setTime(10, 31, 0);
         if (now()->lt($limite)) {
             return;
         }

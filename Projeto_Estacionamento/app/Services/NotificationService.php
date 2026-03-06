@@ -99,6 +99,9 @@ class NotificationService
             ->get();
 
         if ($admins->isEmpty()) {
+            Log::warning('Nenhum admin com email para notificar sobre relatório', [
+                'report_id' => $report->id,
+            ]);
             return;
         }
 
@@ -117,9 +120,22 @@ class NotificationService
 
         $assunto = (string) ($report->tipo ?? 'Novo relatório');
 
+        Log::info('A enviar email de relatório para admins', [
+            'report_id' => $report->id,
+            'admins_count' => $admins->count(),
+        ]);
+
         foreach ($admins as $admin) {
+            if (empty($admin->email)) {
+                Log::warning('Admin sem email no envio de relatório', [
+                    'report_id' => $report->id,
+                    'admin_id' => $admin->id,
+                ]);
+                continue;
+            }
+
             try {
-                Mail::raw($mensagem, function ($mail) use ($admin, $assunto) {
+                Mail::mailer('smtp')->raw($mensagem, function ($mail) use ($admin, $assunto) {
                     $mail->to($admin->email, $admin->nome)
                         ->subject($assunto);
                 });
@@ -127,6 +143,7 @@ class NotificationService
                 Log::error('Falha no envio de email do relatório para admin', [
                     'report_id' => $report->id,
                     'admin_id' => $admin->id,
+                    'admin_email' => $admin->email,
                     'erro' => $e->getMessage(),
                 ]);
             }

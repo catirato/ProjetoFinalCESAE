@@ -9,15 +9,31 @@
         <p class="text-gray-600 mt-1">Valide a chegada dos colaboradores e registe relatórios.</p>
     </div>
 
+    @if(session('success'))
+        <div class="mb-6 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-green-800">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-6 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="mb-6 flex flex-wrap gap-3">
         <a href="{{ route('seguranca.reservas.hoje') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">
             Todas de Hoje
         </a>
-        <a href="{{ route('seguranca.reservas.pendentes') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-            Pendentes
-        </a>
         <a href="{{ route('seguranca.reservas.validadas') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
             Validadas
+        </a>
+        <a href="{{ route('seguranca.reservas.nao-compareceu') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+            Não Compareceu
         </a>
     </div>
 
@@ -28,7 +44,6 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colaborador</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lugar</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -56,22 +71,10 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            @if($reserva->estado === 'ATIVA')
-                                <form method="POST" action="{{ route('seguranca.reservas.validar', $reserva->id) }}">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                        Validar chegada
-                                    </button>
-                                </form>
-                            @else
-                                <span class="text-gray-500">Sem ação</span>
-                            @endif
-                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Sem reservas para hoje.</td>
+                        <td colspan="3" class="px-6 py-8 text-center text-gray-500">Sem reservas para hoje.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -103,7 +106,7 @@
                        capture="environment"
                        multiple
                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar da galeria (até 5 fotos, máx. 5MB cada).</p>
+                <p class="text-xs text-gray-500 mt-1">Pode tirar foto com a câmara ou anexar do computador/galeria (até 5 fotos, máx. 10MB cada).</p>
             </div>
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Enviar relatório

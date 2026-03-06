@@ -54,8 +54,8 @@ Route::middleware(['auth:utilizador'])->group(function () {
     // Área de Segurança
     Route::middleware(['seguranca'])->group(function () {
         Route::get('/seguranca/reservas-hoje', [SegurancaController::class, 'index'])->name('seguranca.reservas.hoje');
-        Route::get('/seguranca/reservas-hoje/pendentes', [SegurancaController::class, 'pendentes'])->name('seguranca.reservas.pendentes');
         Route::get('/seguranca/reservas-hoje/validadas', [SegurancaController::class, 'validadas'])->name('seguranca.reservas.validadas');
+        Route::get('/seguranca/reservas-hoje/nao-compareceu', [SegurancaController::class, 'naoCompareceu'])->name('seguranca.reservas.nao-compareceu');
         Route::post('/seguranca/reservas/{id}/validar', [SegurancaController::class, 'validarChegada'])->name('seguranca.reservas.validar');
         Route::post('/seguranca/reports', [SegurancaController::class, 'storeReport'])->name('seguranca.reports.store');
     });

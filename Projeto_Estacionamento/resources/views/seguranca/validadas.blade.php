@@ -13,11 +13,11 @@
         <a href="{{ route('seguranca.reservas.hoje') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
             Todas de Hoje
         </a>
-        <a href="{{ route('seguranca.reservas.pendentes') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-            Pendentes
-        </a>
         <a href="{{ route('seguranca.reservas.validadas') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg">
             Validadas
+        </a>
+        <a href="{{ route('seguranca.reservas.nao-compareceu') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+            Não Compareceu
         </a>
     </div>
 
