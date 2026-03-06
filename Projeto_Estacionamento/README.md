@@ -1,45 +1,243 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📱 CESAE Parking Management App
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![Laravel](https://img.shields.io/badge/Laravel-10-red)
+![PHP](https://img.shields.io/badge/PHP-8.x-blue)
+![MySQL](https://img.shields.io/badge/MySQL-Database-orange)
+![Tailwind](https://img.shields.io/badge/TailwindCSS-UI-38bdf8)
+![Status](https://img.shields.io/badge/status-development-yellow)
 
-## About Laravel
+## 📌 Project Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The **CESAE Parking Management App** is a web application developed to manage the **CESAE Digital parking lot** in a **fair, automated, and efficient way**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+The system allows employees to **reserve parking spaces**, while administrators maintain full control over:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* parking spots
+* reservations
+* users
+* system rules
 
-## Learning Laravel
+The application was designed using a **Mobile First approach**, with future support for **Progressive Web App (PWA)** functionality, enabling installation on mobile devices and quick access to reservations.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 🎯 Objectives
 
-## Laravel Sponsors
+The main goals of this project are:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+* Ensure **fair distribution of parking spaces**
+* Automate the **reservation and parking management process**
+* Allow **security staff to validate reservations on-site**
+* Provide a **simple and mobile-friendly interface**
+* Offer a **complete administrative management system**
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
+# 🚗 Parking Structure
+
+The parking lot consists of:
+
+| Type              | Quantity | Description                         |
+| ----------------- | -------- | ----------------------------------- |
+| Total spaces      | 10       | Total available parking spots       |
+| Reserved spaces   | 3        | Fixed spaces for CESAE vehicles     |
+| Rotational spaces | 7        | Available for employee reservations |
+
+### Reserved spaces include
+
+* 1 space for the **electric van**
+* 2 spaces for **CESAE vehicles**
+
+### Admin configuration options
+
+Administrators can:
+
+* add or remove parking spots
+* define **fixed or rotational spaces**
+* temporarily **block spaces** (events, maintenance, etc.)
+
+---
+
+# 👥 User Roles
+
+## 👑 Administrator
+
+Administrators have full system control and can:
+
+* manage parking spaces
+* manage reservations
+* manage users
+* configure system rules
+* view reservation history and statistics
+
+---
+
+## 👨‍💼 Employee
+
+Employees can:
+
+* reserve a parking space
+* cancel reservations
+* view upcoming reservations
+* access personal reservation history
+
+---
+
+## 🛡 Security
+
+Security staff are responsible for:
+
+* validating reservations on-site
+* verifying parking occupancy
+
+---
+
+# ⚙️ Main Features
+
+* 🚗 Parking reservation system
+* ⏳ Automatic **waiting list** when parking is full
+* ⚠️ **Penalty system** for late cancellations
+* 📊 Reservation management dashboard
+* 👥 User role management
+* 📱 **Mobile-optimized interface**
+
+---
+
+# 🧠 Technologies Used
+
+### Backend
+
+* **Laravel**
+* **PHP**
+
+### Frontend
+
+* **Blade Templates**
+* **Tailwind CSS**
+* **JavaScript**
+
+### Database
+
+* **MySQL**
+
+---
+
+# 📱 Future Improvements
+
+The project is prepared to evolve into a **Progressive Web App (PWA)** with:
+
+* 📲 installation on mobile devices
+* 🔔 push notifications
+* ⚡ faster loading and offline capabilities
+* 📱 native-app-like experience
+
+---
+
+# 🛠 Installation
+
+To run the project locally:
+
+### 1️⃣ Clone the repository
+
+```bash
+git clone https://github.com/your-username/cesae-parking-app.git
+cd cesae-parking-app
+```
+
+### 2️⃣ Install dependencies
+
+```bash
+composer install
+npm install
+```
+
+### 3️⃣ Configure environment
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Generate application key:
+
+```bash
+php artisan key:generate
+```
+
+Configure your database in `.env`.
+
+---
+
+### 4️⃣ Run migrations
+
+```bash
+php artisan migrate
+```
+
+---
+
+### 5️⃣ Start the development server
+
+```bash
+php artisan serve
+```
+
+The application will be available at:
+
+```
+http://localhost:8000
+```
+
+---
+
+# 📂 Project Structure
+
+```
+app/
+resources/
+ ├── views
+ ├── css
+ └── js
+routes/
+database/
+public/
+```
+
+Main components:
+
+* **Controllers** → application logic
+* **Models** → database interaction
+* **Views** → Blade templates for the interface
+* **Routes** → application routing
+
+---
+
+# 📚 Academic Context
+
+This project was developed as part of the **Final Project of the Web Development Course at CESAE Digital**.
+
+The goal was to apply knowledge in:
+
+* full-stack web development
+* database design
+* application architecture
+* user experience design
+
+---
+
+# 👨‍💻 Author
+
+Developed by:
+
+**Catarina Rato**
+**Graça Neves**
+**Jandira Pedrosa**
+**Sara Carvalho**
+
+
+CESAE Digital
+Web Development Program
 - **[Active Logic](https://activelogic.com)**
 
 ## Contributing
